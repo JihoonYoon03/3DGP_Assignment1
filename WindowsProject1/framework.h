@@ -1,4 +1,4 @@
-// header.h: 표준 시스템 포함 파일
+﻿// header.h: 표준 시스템 포함 파일
 // 또는 프로젝트 특정 포함 파일이 들어 있는 포함 파일입니다.
 //
 
@@ -23,3 +23,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+constexpr int FRAMEBUFFER_WIDTH{ 640 };
+constexpr int FRAMEBUFFER_HEIGHT{ 480 };
+
+#define DegreeToRadian(x)	float((x) * 3.141592654f / 180.0f)
