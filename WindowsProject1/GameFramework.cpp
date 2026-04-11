@@ -1,5 +1,6 @@
 ﻿#include "framework.h"
 #include "GameFramework.h"
+#include "Timer.h"
 
 void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 {
@@ -77,6 +78,7 @@ void CGameFramework::BuildObjects()
 	m_pPlayer = new CPlayer();
 	m_pPlayer->SetCamera(pCamera);
 	m_pPlayer->SetPosition(0.0f, 3.0f, -40.0f);
+	m_pPlayer->SetMoveSpeed(20.f);
 
 	// 씬 객체를 생성하고 게임 객체들을 생성한다. 
 	m_pScene = new CScene();
@@ -97,13 +99,19 @@ void CGameFramework::ProcessInput()
 	{
 		float cxKeyDelta = 0.0f, cyKeyDelta = 0.0f, czKeyDelta = 0.0f;
 		
-		// speed = 0.125f
-		if (pKeyBuffer[VK_UP] & 0xF0) czKeyDelta = +0.125f;
-		if (pKeyBuffer[VK_DOWN] & 0xF0) czKeyDelta = -0.125f;
-		if (pKeyBuffer[VK_LEFT] & 0xF0) cxKeyDelta = -0.125f;
-		if (pKeyBuffer[VK_RIGHT] & 0xF0) cxKeyDelta = +0.125f;
-		if (pKeyBuffer[VK_PRIOR] & 0xF0) cyKeyDelta = +0.125f;
-		if (pKeyBuffer[VK_NEXT] & 0xF0) cyKeyDelta = -0.125f;
+		if (pKeyBuffer[VK_UP] & 0xF0) czKeyDelta = +1;
+		if (pKeyBuffer[VK_DOWN] & 0xF0) czKeyDelta = -1;
+
+		if (pKeyBuffer[VK_LEFT] & 0xF0) cxKeyDelta = -1;
+		if (pKeyBuffer[VK_RIGHT] & 0xF0) cxKeyDelta = +1;
+
+		if (pKeyBuffer[VK_PRIOR] & 0xF0) cyKeyDelta = +1;
+		if (pKeyBuffer[VK_NEXT] & 0xF0) cyKeyDelta = -1;
+
+		float dt = DELTA_TIME;
+		cxKeyDelta *= dt;
+		cyKeyDelta *= dt;
+		czKeyDelta *= dt;
 
 		m_pPlayer->Move(cxKeyDelta, cyKeyDelta, czKeyDelta);
 	}
@@ -113,11 +121,13 @@ void CGameFramework::AnimateObjects()
 {
 	// deltatime 추가 필요
 
-	if (m_pScene) m_pScene->Animate(1.0f / 60.0f);
+	if (m_pScene) m_pScene->Animate(DELTA_TIME);
 }
 
 void CGameFramework::FrameAdvance()
 {
+	GET_SINGLE(CTimer).Update();
+
 	// 사용자 입력을 처리한다.
 	ProcessInput();
 	

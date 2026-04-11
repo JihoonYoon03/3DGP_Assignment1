@@ -10,6 +10,8 @@ public:
 	
 	void SetPosition(float x, float y, float z);
 	void SetRotation(float x, float y, float z);
+	void SetMoveSpeed(float d);
+
 	void Move(float x, float y, float z);
 	void Rotate(float x, float y, float z);
 	
@@ -19,5 +21,7 @@ public:
 private:
 	// 플레이어 객체에 포함된 카메라이다.
 	CCamera* m_pCamera = nullptr;
+	
+	float m_fMoveSpeed = 0.f;
 };
 

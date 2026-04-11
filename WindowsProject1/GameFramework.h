@@ -43,7 +43,7 @@ private:
 
 	// 플레이어 객체이다.
 	CPlayer* m_pPlayer = nullptr;
-	
+
 	// 게임 객체들을 포함하는 씬(게임 세계) 클래스이다.
 	CScene* m_pScene = nullptr;
 };

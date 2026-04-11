@@ -28,3 +28,5 @@ constexpr int FRAMEBUFFER_WIDTH{ 640 };
 constexpr int FRAMEBUFFER_HEIGHT{ 480 };
 
 #define DegreeToRadian(x)	float((x) * 3.141592654f / 180.0f)
+
+#define GET_SINGLE(type)	type::GetInstance()

@@ -21,11 +21,16 @@ void CPlayer::SetRotation(float x, float y, float z)
 	if (m_pCamera) m_pCamera->SetRotation(x, y, z);
 }
 
+void CPlayer::SetMoveSpeed(float d)
+{
+	m_fMoveSpeed = d;
+}
+
 void CPlayer::Move(float x, float y, float z)
 {
 	// 플레이어 객체와 카메라를 이동한다. 
-	CGameObject::Move(x, y, z);
-	if (m_pCamera) m_pCamera->Move(x, y, z);
+	CGameObject::Move(x * m_fMoveSpeed, y * m_fMoveSpeed, z * m_fMoveSpeed);
+	if (m_pCamera) m_pCamera->Move(x * m_fMoveSpeed, y * m_fMoveSpeed, z * m_fMoveSpeed);
 }
 
 void CPlayer::Rotate(float fPitch, float fYaw, float fRoll)
