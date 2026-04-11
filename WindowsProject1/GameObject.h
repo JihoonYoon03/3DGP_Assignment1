@@ -41,6 +41,7 @@ private:
 
 	// 모양(메쉬/모델)
 	CMesh* m_pMesh = nullptr;
+
 	// 게임 객체의 색상이다.
 	DWORD	m_dwColor = RGB(255, 0, 0);
 

@@ -39,22 +39,22 @@ public:
 	CMesh(int nPolygons);
 	virtual ~CMesh();
 
-private:
-	int m_nReferences = 1;
-
-public:
-	void AddRef() { m_nReferences++; }
-	void Release();
-
-private:
-	int			m_nPolygons = 0;
-	CPolygon**	m_ppPolygons = nullptr;
-
-public:
 	void SetPolygon(int nIndex, CPolygon* pPolygon);
 
 	virtual void Render(HDC hDCFrameBuffer);
 
+	void AddRef() { m_nReferences++; }
+	void Release();
+
+private:
+	int m_nReferences = 1;
+	
+	int			m_nPolygons = 0;
+	CPolygon**	m_ppPolygons = nullptr;
+
+	// 최종적으로 그려낼 정점 모임
+	size_t m_nDrawingPoints = 0;
+	std::vector<POINT> m_vDrawingPoints;
 };
 
 class CCubeMesh : public CMesh {

@@ -53,6 +53,7 @@ void CMesh::SetPolygon(int nIndex, CPolygon* pPolygon)
 {
 	if ((0 <= nIndex) && (nIndex < m_nPolygons)) {
 		m_ppPolygons[nIndex] = pPolygon;
+		m_nDrawingPoints += pPolygon->m_nVertices;
 	}
 }
 
@@ -71,6 +72,39 @@ void CMesh::Render(HDC hDCFrameBuffer)
 	CPoint3D f3InitProject, f3PrevProject, f3Intersect;
 	bool bPrevInside = false, bInitInside = false, bCurInside = false, bIntersectInside = false;
 
+	// 벡터 메모리 할당 없는경우 크기 초기화
+	if (m_vDrawingPoints.capacity() < m_nDrawingPoints) {
+		m_vDrawingPoints.reserve(m_nDrawingPoints);
+	}
+
+	m_vDrawingPoints.clear();
+
+#ifndef WIREFRAME_MODE
+
+	// 모든 다각형 렌더링
+	for (int j = 0; j < m_nPolygons; j++) {
+		int nVertices = m_ppPolygons[j]->m_nVertices;
+		CVertex* pVertices = m_ppPolygons[j]->m_pVertices;
+
+		// 이전에 데이터 넣은 만큼의 위치 기억, 오프셋 활용
+		size_t startIndex = m_vDrawingPoints.size();
+
+		// 모든 정점 원근 투영 변환 및 렌더링
+		for (int i = 0; i < nVertices; i++) {
+			CPoint3D f3CurProject = CGraphicsPipeline::Project(pVertices[i].m_f3Position);
+
+			f3CurProject = CGraphicsPipeline::ScreenTransform(f3CurProject);
+
+			// 여기서 화면 잘림 여부 검사하기
+
+			// 렌더링 할 정점 추가
+			m_vDrawingPoints.push_back(POINT{ (long)f3CurProject.x, (long)f3CurProject.y });
+		}
+		Polygon(hDCFrameBuffer, m_vDrawingPoints.data() + startIndex, nVertices);
+	}
+
+#else
+
 	// 모든 다각형 렌더링
 	for (int j = 0; j < m_nPolygons; j++) {
 		int nVertices = m_ppPolygons[j]->m_nVertices;
@@ -78,32 +112,35 @@ void CMesh::Render(HDC hDCFrameBuffer)
 
 		// 첫 정점 원근 투영 변환
 		f3PrevProject = f3InitProject = CGraphicsPipeline::Project(pVertices[0].m_f3Position);
+
 		// 투영 사각형 포함 여부 체크
 		bPrevInside = bInitInside = (-1.f <= f3InitProject.x) && (f3InitProject.x <= 1.f) &&
 			(-1.f <= f3InitProject.y) && (f3InitProject.y <= 1.f);
 
 		// 모든 정점 원근 투영 변환 및 렌더링
-		for (int i = 1; i < nVertices; i++) {
+		for (int i = 0; i < nVertices; i++) {
 			CPoint3D f3CurProject = CGraphicsPipeline::Project(pVertices[i].m_f3Position);
 
 			bCurInside = (-1.f <= f3CurProject.x) && (f3CurProject.x <= 1.f) &&
-						 (-1.f <= f3CurProject.y) && (f3CurProject.y <= 1.f);
+				(-1.f <= f3CurProject.y) && (f3CurProject.y <= 1.f);
 
 			// 변환된 점이 투영 사각형 포함 시 이전과 현재 점을 선분으로 그림
-			if (((f3PrevProject.z >= 0.f) || (f3CurProject.z >= 0.f)) &&
-				((bCurInside || bPrevInside))) {
+			if (((f3PrevProject.z >= 0.f) || (f3CurProject.z >= 0.f))
+				&& ((bCurInside || bPrevInside))) {
 				::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3CurProject);
 				f3PrevProject = f3CurProject;
 				bPrevInside = bCurInside;
 			}
 		}
-
-		// 마지막 정점과 시작점 잇기
-		if (((f3PrevProject.z >= 0.f) || (f3InitProject.z >= 0.f)) &&
-			((bInitInside || bPrevInside))) {
-			::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3InitProject);
-		}
 	}
+
+	// 마지막 정점과 시작점 잇기
+	if (((f3PrevProject.z >= 0.f) || (f3InitProject.z >= 0.f)) &&
+		((bInitInside || bPrevInside))) {
+		::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3InitProject);
+	}
+
+#endif
 }
 
 CCubeMesh::CCubeMesh(float fWidth, float fHeight, float fDepth) :

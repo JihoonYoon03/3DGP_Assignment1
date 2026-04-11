@@ -100,7 +100,11 @@ void CGameObject::Render(HDC hDCFrameBuffer)
 {
 	HPEN hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
 	HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
+	HBRUSH hBrush = ::CreateSolidBrush(m_dwColor);
+	HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
 	if (m_pMesh) m_pMesh->Render(hDCFrameBuffer);
 	::SelectObject(hDCFrameBuffer, hOldPen);
+	::SelectObject(hDCFrameBuffer, hOldBrush);
 	::DeleteObject(hPen);
+	::DeleteObject(hBrush);
 }
