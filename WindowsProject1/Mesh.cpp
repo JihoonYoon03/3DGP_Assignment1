@@ -15,7 +15,14 @@ CPolygon::~CPolygon()
 	if (m_pVertices) delete[] m_pVertices;
 }
 
-void CPolygon::SetVertex(int nIndex, CVertex vertex)
+void CPolygon::SetVertex(int nIndex, CVertex& vertex)
+{
+	if ((0 <= nIndex) && (nIndex < m_nVertices) && m_pVertices) {
+		m_pVertices[nIndex] = vertex;
+	}
+}
+
+void CPolygon::SetVertex(int nIndex, const CVertex& vertex)
 {
 	if ((0 <= nIndex) && (nIndex < m_nVertices) && m_pVertices) {
 		m_pVertices[nIndex] = vertex;
@@ -57,11 +64,11 @@ void CMesh::SetPolygon(int nIndex, CPolygon* pPolygon)
 	}
 }
 
-void Draw2DLine(HDC hDCFrameBuffer, CPoint3D& f3PrevProject, CPoint3D& f3CurProject)
+void Draw2DLine(HDC hDCFrameBuffer, XMFLOAT3& f3PrevProject, XMFLOAT3& f3CurProject)
 {
 	// 투영 좌표계 2점을 화면 좌표계로 변환, 그 점을 선분으로 그림
-	CPoint3D f3Prev = CGraphicsPipeline::ScreenTransform(f3PrevProject);
-	CPoint3D f3Cur = CGraphicsPipeline::ScreenTransform(f3CurProject);
+	XMFLOAT3 f3Prev = CGraphicsPipeline::ScreenTransform(f3PrevProject);
+	XMFLOAT3 f3Cur = CGraphicsPipeline::ScreenTransform(f3CurProject);
 
 	::MoveToEx(hDCFrameBuffer, (long)f3Prev.x, (long)f3Prev.y, nullptr);
 	::LineTo(hDCFrameBuffer, (long)f3Cur.x, (long)f3Cur.y);
@@ -69,7 +76,7 @@ void Draw2DLine(HDC hDCFrameBuffer, CPoint3D& f3PrevProject, CPoint3D& f3CurProj
 
 void CMesh::Render(HDC hDCFrameBuffer)
 {
-	CPoint3D f3InitProject, f3PrevProject, f3Intersect;
+	XMFLOAT3 f3InitProject, f3PrevProject, f3Intersect;
 	bool bPrevInside = false, bInitInside = false, bCurInside = false, bIntersectInside = false;
 
 	// 벡터 메모리 할당 없는경우 크기 초기화
@@ -91,7 +98,7 @@ void CMesh::Render(HDC hDCFrameBuffer)
 
 		// 모든 정점 원근 투영 변환 및 렌더링
 		for (int i = 0; i < nVertices; i++) {
-			CPoint3D f3CurProject = CGraphicsPipeline::Project(pVertices[i].m_f3Position);
+			XMFLOAT3 f3CurProject = CGraphicsPipeline::Project(pVertices[i].m_xmf3Position);
 
 			f3CurProject = CGraphicsPipeline::ScreenTransform(f3CurProject);
 
@@ -111,7 +118,7 @@ void CMesh::Render(HDC hDCFrameBuffer)
 		CVertex* pVertices = m_ppPolygons[j]->m_pVertices;
 
 		// 첫 정점 원근 투영 변환
-		f3PrevProject = f3InitProject = CGraphicsPipeline::Project(pVertices[0].m_f3Position);
+		f3PrevProject = f3InitProject = CGraphicsPipeline::Project(pVertices[0].m_xmf3Position);
 
 		// 투영 사각형 포함 여부 체크
 		bPrevInside = bInitInside = (-1.f <= f3InitProject.x) && (f3InitProject.x <= 1.f) &&
@@ -119,7 +126,7 @@ void CMesh::Render(HDC hDCFrameBuffer)
 
 		// 모든 정점 원근 투영 변환 및 렌더링
 		for (int i = 0; i < nVertices; i++) {
-			CPoint3D f3CurProject = CGraphicsPipeline::Project(pVertices[i].m_f3Position);
+			CPoint3D f3CurProject = CGraphicsPipeline::Project(pVertices[i].m_xmf3Position);
 
 			bCurInside = (-1.f <= f3CurProject.x) && (f3CurProject.x <= 1.f) &&
 				(-1.f <= f3CurProject.y) && (f3CurProject.y <= 1.f);
@@ -194,6 +201,172 @@ CCubeMesh::CCubeMesh(float fWidth, float fHeight, float fDepth) :
 }
 
 CCubeMesh::~CCubeMesh()
+{
+
+}
+
+
+// ========================================================
+CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth) : CMesh(24)
+// ========================================================
+{
+	float fx = fWidth * 0.5f, fy = fHeight * 0.5f, fz = fDepth * 0.5f;
+
+	float x1 = fx * 0.2f, y1 = fy * 0.2f, x2 = fx * 0.1f, y3 = fy * 0.3f, y2 = ((y1 - (fy - y3)) / x1) * x2 + (fy - y3);
+	int i = 0;
+
+	//Upper Plane
+	CPolygon* pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), -fz));
+	pFace->SetVertex(1, CVertex(+x1, -y1, -fz));
+	pFace->SetVertex(2, CVertex(0.0f, 0.0f, -fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), -fz));
+	pFace->SetVertex(1, CVertex(0.0f, 0.0f, -fz));
+	pFace->SetVertex(2, CVertex(-x1, -y1, -fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(+x2, +y2, -fz));
+	pFace->SetVertex(1, CVertex(+fx, -y3, -fz));
+	pFace->SetVertex(2, CVertex(+x1, -y1, -fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(-x2, +y2, -fz));
+	pFace->SetVertex(1, CVertex(-x1, -y1, -fz));
+	pFace->SetVertex(2, CVertex(-fx, -y3, -fz));
+	SetPolygon(i++, pFace);
+
+	//Lower Plane
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), +fz));
+	pFace->SetVertex(1, CVertex(0.0f, 0.0f, +fz));
+	pFace->SetVertex(2, CVertex(+x1, -y1, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), +fz));
+	pFace->SetVertex(1, CVertex(-x1, -y1, +fz));
+	pFace->SetVertex(2, CVertex(0.0f, 0.0f, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(+x2, +y2, +fz));
+	pFace->SetVertex(1, CVertex(+x1, -y1, +fz));
+	pFace->SetVertex(2, CVertex(+fx, -y3, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(-x2, +y2, +fz));
+	pFace->SetVertex(1, CVertex(-fx, -y3, +fz));
+	pFace->SetVertex(2, CVertex(-x1, -y1, +fz));
+	SetPolygon(i++, pFace);
+
+	//Right Plane
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), -fz));
+	pFace->SetVertex(1, CVertex(0.0f, +(fy + y3), +fz));
+	pFace->SetVertex(2, CVertex(+x2, +y2, -fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(+x2, +y2, -fz));
+	pFace->SetVertex(1, CVertex(0.0f, +(fy + y3), +fz));
+	pFace->SetVertex(2, CVertex(+x2, +y2, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(+x2, +y2, -fz));
+	pFace->SetVertex(1, CVertex(+x2, +y2, +fz));
+	pFace->SetVertex(2, CVertex(+fx, -y3, -fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(+fx, -y3, -fz));
+	pFace->SetVertex(1, CVertex(+x2, +y2, +fz));
+	pFace->SetVertex(2, CVertex(+fx, -y3, +fz));
+	SetPolygon(i++, pFace);
+
+	//Back/Right Plane
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(+x1, -y1, -fz));
+	pFace->SetVertex(1, CVertex(+fx, -y3, -fz));
+	pFace->SetVertex(2, CVertex(+fx, -y3, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(+x1, -y1, -fz));
+	pFace->SetVertex(1, CVertex(+fx, -y3, +fz));
+	pFace->SetVertex(2, CVertex(+x1, -y1, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, 0.0f, -fz));
+	pFace->SetVertex(1, CVertex(+x1, -y1, -fz));
+	pFace->SetVertex(2, CVertex(+x1, -y1, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, 0.0f, -fz));
+	pFace->SetVertex(1, CVertex(+x1, -y1, +fz));
+	pFace->SetVertex(2, CVertex(0.0f, 0.0f, +fz));
+	SetPolygon(i++, pFace);
+
+	//Left Plane
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), +fz));
+	pFace->SetVertex(1, CVertex(0.0f, +(fy + y3), -fz));
+	pFace->SetVertex(2, CVertex(-x2, +y2, -fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), +fz));
+	pFace->SetVertex(1, CVertex(-x2, +y2, -fz));
+	pFace->SetVertex(2, CVertex(-x2, +y2, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(-x2, +y2, +fz));
+	pFace->SetVertex(1, CVertex(-x2, +y2, -fz));
+	pFace->SetVertex(2, CVertex(-fx, -y3, -fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(-x2, +y2, +fz));
+	pFace->SetVertex(1, CVertex(-fx, -y3, -fz));
+	pFace->SetVertex(2, CVertex(-fx, -y3, +fz));
+	SetPolygon(i++, pFace);
+
+	//Back/Left Plane
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, 0.0f, -fz));
+	pFace->SetVertex(1, CVertex(0.0f, 0.0f, +fz));
+	pFace->SetVertex(2, CVertex(-x1, -y1, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(0.0f, 0.0f, -fz));
+	pFace->SetVertex(1, CVertex(-x1, -y1, +fz));
+	pFace->SetVertex(2, CVertex(-x1, -y1, -fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(-x1, -y1, -fz));
+	pFace->SetVertex(1, CVertex(-x1, -y1, +fz));
+	pFace->SetVertex(2, CVertex(-fx, -y3, +fz));
+	SetPolygon(i++, pFace);
+
+	pFace = new CPolygon(3);
+	pFace->SetVertex(0, CVertex(-x1, -y1, -fz));
+	pFace->SetVertex(1, CVertex(-fx, -y3, +fz));
+	pFace->SetVertex(2, CVertex(-fx, -y3, -fz));
+	SetPolygon(i++, pFace);
+}
+
+CAirplaneMesh::~CAirplaneMesh()
 {
 
 }

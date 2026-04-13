@@ -1,25 +1,51 @@
 ﻿#pragma once
+//-----------------------------------------------------------------------------
+// File: CGameTimer.h
+//-----------------------------------------------------------------------------
 
+const ULONG MAX_SAMPLE_COUNT = 50; // Maximum frame time sample count
 
-class CTimer {
+class CGameTimer
+{
 public:
-	static CTimer& GetInstance();
+	static CGameTimer& GetInstance();
 
 	// 싱글톤, 복사및 복사할당 금지
-	CTimer(const CTimer&) = delete;
-	CTimer& operator=(const CTimer&) = delete;
+	CGameTimer(const CGameTimer&) = delete;
+	CGameTimer& operator=(const CGameTimer&) = delete;
+public:
+	CGameTimer();
+	virtual ~CGameTimer();
 
-	void Update();
+	void Tick(float fLockFPS = 0.0f);
+	void Start();
+	void Stop();
+	void Reset();
 
-	float GetDeltaTime() const { return m_DeltaTime; };
+	unsigned long GetFrameRate(LPTSTR lpszString = NULL, int nCharacters = 0);
+	float GetTimeElapsed();
+	float GetTotalTime();
 
 private:
-	CTimer();
+	double							m_fTimeScale;
+	float							m_fTimeElapsed;
 
-	LARGE_INTEGER m_Frequency;
-	LARGE_INTEGER m_PrevTime;
+	__int64							m_nBasePerformanceCounter;
+	__int64							m_nPausedPerformanceCounter;
+	__int64							m_nStopPerformanceCounter;
+	__int64							m_nCurrentPerformanceCounter;
+	__int64							m_nLastPerformanceCounter;
 
-	float m_DeltaTime;
+	__int64							m_PerformanceFrequencyPerSec;
+
+	float							m_fFrameTime[MAX_SAMPLE_COUNT];
+	ULONG							m_nSampleCount;
+
+	unsigned long					m_nCurrentFrameRate;
+	unsigned long					m_FramePerSecond;
+	float							m_fFPSTimeElapsed;
+
+	bool							m_bStopped;
 };
 
-#define DELTA_TIME			GET_SINGLE(CTimer).GetDeltaTime()
+#define DELTA_TIME	GET_SINGLE(CGameTimer).GetTimeElapsed()

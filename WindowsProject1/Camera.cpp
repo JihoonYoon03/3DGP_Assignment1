@@ -1,122 +1,175 @@
 ﻿#include "framework.h"
 #include "Camera.h"
+#include "Player.h"
 
+// ======================================
 CViewport::CViewport(int nLeft, int nTop, int nWidth, int nHeight)
+// ======================================
 	: m_nLeft{ nLeft }, m_nTop{ nTop }, m_nWidth{ nWidth }, m_nHeight{ nHeight }
 {
 
 }
 
+void CViewport::SetViewport(int nLeft, int nTop, int nWidth, int nHeight)
+{
+	m_nLeft = nLeft;
+	m_nTop = nTop;
+	m_nWidth = nWidth;
+	m_nHeight = nHeight;
+}
+
+
+// ======================================
 CCamera::CCamera()
+// ======================================
 {
 
 }
 
 CCamera::~CCamera()
 {
-	if (m_pViewport)
-		delete m_pViewport;
+
 }
 
-CPoint3D CCamera::CameraTransform(CPoint3D& f3World)
+void CCamera::GenerateViewMatrix()
 {
-	//카메라를 월드 좌표계의 원점으로 이동한다. 
-	CPoint3D f3Camera = f3World;
-	f3Camera.x -= m_fxPosition;
-	f3Camera.y -= m_fyPosition;
-	f3Camera.z -= m_fzPosition;
+	XMVECTOR xmvPos = XMLoadFloat3(&m_xmf3Position);
+	XMVECTOR xmvLook = XMVector3Normalize(XMLoadFloat3(&m_xmf3Look));
+	XMVECTOR xmvUp = XMVector3Normalize(XMLoadFloat3(&m_xmf3Up));
+	XMVECTOR xmvRight = XMVector3Normalize(XMVector3Cross(xmvUp, xmvLook));
+	xmvUp = XMVector3Normalize(XMVector3Cross(xmvLook, xmvRight));
 
-	float fPitch = DegreeToRadian(-m_fxRotation);
-	float fYaw = DegreeToRadian(-m_fyRotation);
-	float fRoll = DegreeToRadian(-m_fzRotation);
+	XMStoreFloat3(&m_xmf3Look, xmvLook);
+	XMStoreFloat3(&m_xmf3Right, xmvRight);
+	XMStoreFloat3(&m_xmf3Up, xmvUp);
 
-	//카메라를 월드 좌표계의 축과 일치하도록 회전한다.
-	CPoint3D f3Rotated = f3Camera;
-	if (fPitch != 0.f)	{
-		f3Rotated.y = float(f3Camera.y * cos(fPitch) - f3Camera.z *	sin(fPitch));
-		f3Rotated.z = float(f3Camera.y * sin(fPitch) + f3Camera.z *	cos(fPitch));
-		f3Camera.y = f3Rotated.y;
-		f3Camera.z = f3Rotated.z;
-	}
-	if (fYaw != 0.f) {
-		f3Rotated.x = float(f3Camera.x * cos(fYaw) + f3Camera.z * sin(fYaw));
-		f3Rotated.z = float(-f3Camera.x * sin(fYaw) + f3Camera.z * cos(fYaw));
-		f3Camera.x = f3Rotated.x;
-		f3Camera.z = f3Rotated.z;
-	}
-	if (fRoll != 0.f) {
-		f3Rotated.x = float(f3Camera.x * cos(fRoll) - f3Camera.y * sin(fRoll));
-		f3Rotated.y = float(f3Camera.x * sin(fRoll) + f3Camera.y * cos(fRoll));
-		f3Camera.x = f3Rotated.x;
-		f3Camera.y = f3Rotated.y;
-	}
+	XMMATRIX xmmView = XMMatrixLookToLH(xmvPos, xmvLook, xmvUp);
+	XMStoreFloat4x4(&m_xmf4x4View, xmmView);
 
-	return f3Camera;
+	XMMATRIX xmmPersProj = XMLoadFloat4x4(&m_xmf4x4PerspectiveProject);
+	XMStoreFloat4x4(
+		&m_xmf4x4ViewPerspectiveProject,
+		XMMatrixMultiply(xmmView, xmmPersProj)
+	);
 }
 
-CPoint3D CCamera::ProjectionTransform(CPoint3D& f3Camera)
+void CCamera::GeneratePerspectiveProjectionMatrix(float fNearPlaneDistance, float fFarPlaneDistance, float fFOVAngle)
 {
-	CPoint3D f3Project = f3Camera;
-	if (f3Camera.z != 0.0f)	{
-		//카메라의 시야각이 90°가 아닌 경우 투영 사각형까지의 거리를 곱한다.
-		f3Project.x = float((f3Camera.x * m_fProjectRectDistance) / (m_fAspectRatio * f3Camera.z));
-		f3Project.y = float((f3Camera.y * m_fProjectRectDistance) / f3Camera.z);
-
-		//투영 좌표계는 2차원이므로 z-좌표에 카메라 좌표계 z-좌표를 저장한다.
-		f3Project.z = f3Camera.z;
-	}
-	
-	return f3Project;
+	float fAspectRatio = (float(m_Viewport.m_nWidth) / float(m_Viewport.m_nHeight));
+	XMStoreFloat4x4(
+		&m_xmf4x4PerspectiveProject,
+		XMMatrixPerspectiveFovLH(
+			XMConvertToRadians(fFOVAngle),
+			fAspectRatio,
+			fNearPlaneDistance,
+			fFarPlaneDistance)
+	);
 }
 
-CPoint3D CCamera::ScreenTransform(CPoint3D& f3Projection)
+void CCamera::SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
 {
-	CPoint3D f3Screen = f3Projection;
-	float fHalfWidth = m_pViewport->m_nWidth * 0.5f;
-	float fHalfHeight = m_pViewport->m_nHeight * 0.5f;
-	f3Screen.x = (f3Projection.x * fHalfWidth) + m_pViewport->m_nLeft + fHalfWidth;
-	f3Screen.y = (-f3Projection.y * fHalfHeight) + m_pViewport->m_nTop + fHalfHeight;
-
-	return f3Screen;
+	SetLookAt(m_xmf3Position, xmf3LookAt, xmf3Up);
 }
 
-void CCamera::SetPosition(float x, float y, float z)
+void CCamera::SetLookAt(XMFLOAT3& xmf3Position, XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
 {
-	m_fxPosition = x;
-	m_fyPosition = y;
-	m_fzPosition = z;
-}
+	m_xmf3Position = xmf3Position;
+	XMStoreFloat4x4(
+		&m_xmf4x4View,
+		XMMatrixLookAtLH(
+			XMLoadFloat3(&m_xmf3Position),
+			XMLoadFloat3(&xmf3LookAt),
+			XMLoadFloat3(&xmf3Up)
+		));
 
-void CCamera::SetRotation(float fPitch, float fYaw, float fRoll)
-{
-	m_fxRotation = fPitch;
-	m_fyRotation = fYaw;
-	m_fzRotation = fRoll;
-}
+	// 뷰 변환 행렬에서 다시 기저 벡터 추출해 저장
+	XMVECTORF32 xmf32vRight = { m_xmf4x4View._11, m_xmf4x4View._21, m_xmf4x4View._31, 0.0f };
+	XMVECTORF32 xmf32vUp = { m_xmf4x4View._12, m_xmf4x4View._22, m_xmf4x4View._32, 0.0f };
+	XMVECTORF32 xmf32vLook = { m_xmf4x4View._13, m_xmf4x4View._23, m_xmf4x4View._33, 0.0f };
 
-void CCamera::SetViewport(int nLeft, int nTop, int nWidth, int nHeight)
-{
-	m_pViewport = new CViewport(nLeft, nTop, nWidth, nHeight);
-	m_fAspectRatio = float(m_pViewport->m_nWidth) / float(m_pViewport->m_nHeight);
+	XMStoreFloat3(&m_xmf3Right, XMVector3Normalize(xmf32vRight));
+	XMStoreFloat3(&m_xmf3Up, XMVector3Normalize(xmf32vUp));
+	XMStoreFloat3(&m_xmf3Look, XMVector3Normalize(xmf32vLook));
 }
 
 void CCamera::SetFOVAngle(float fFOVAngle)
 {
 	m_fFOVAngle = fFOVAngle;
-	m_fProjectRectDistance = float(1.0f / tan(DegreeToRadian(fFOVAngle * 0.5f)));
+	m_fProjectRectDistance = float(1.0f / tan(XMConvertToRadians(fFOVAngle * 0.5f)));
+}
+
+void CCamera::SetViewport(int nLeft, int nTop, int nWidth, int nHeight)
+{
+	m_Viewport.SetViewport(nLeft, nTop, nWidth, nHeight);
+	m_fAspectRatio = float(m_Viewport.m_nWidth) / float(m_Viewport.m_nHeight);
+}
+
+void CCamera::Move(const XMFLOAT3& xmf3Shift)
+{
+	XMStoreFloat3(&m_xmf3Position,
+		XMVectorAdd(
+			XMLoadFloat3(&m_xmf3Position),
+			XMLoadFloat3(&xmf3Shift)
+		));
 }
 
 void CCamera::Move(float x, float y, float z)
 {
-	m_fxPosition += x;
-	m_fyPosition += y;
-	m_fzPosition += z;
+	Move(XMFLOAT3(x, y, z));
 }
 
 void CCamera::Rotate(float fPitch, float fYaw, float fRoll)
 {
-	m_fxRotation += fPitch;
-	m_fyRotation += fYaw;
-	m_fzRotation += fRoll;
+	// 축마다 pitch yaw roll 적용
+	if (fPitch != 0.0f) {
+		XMMATRIX xmmtxRotate = XMMatrixRotationAxis(XMLoadFloat3(&m_xmf3Right), XMConvertToRadians(fPitch));
+		XMStoreFloat3(&m_xmf3Look, XMVector3TransformNormal(XMLoadFloat3(&m_xmf3Look), xmmtxRotate));
+		XMStoreFloat3(&m_xmf3Up, XMVector3TransformNormal(XMLoadFloat3(&m_xmf3Up), xmmtxRotate));
+	}
+	if (fYaw != 0.0f) {
+		XMMATRIX xmmtxRotate = XMMatrixRotationAxis(XMLoadFloat3(&m_xmf3Up), XMConvertToRadians(fYaw));
+		XMStoreFloat3(&m_xmf3Look, XMVector3TransformNormal(XMLoadFloat3(&m_xmf3Look), xmmtxRotate));
+		XMStoreFloat3(&m_xmf3Right,	XMVector3TransformNormal(XMLoadFloat3(&m_xmf3Right), xmmtxRotate));
+	}
+	if (fRoll != 0.0f) {
+		XMMATRIX xmmtxRotate = XMMatrixRotationAxis(XMLoadFloat3(&m_xmf3Look), XMConvertToRadians(fRoll));
+		XMStoreFloat3(&m_xmf3Up, XMVector3TransformNormal(XMLoadFloat3(&m_xmf3Up), xmmtxRotate));
+		XMStoreFloat3(&m_xmf3Right,	XMVector3TransformNormal(XMLoadFloat3(&m_xmf3Right), xmmtxRotate));
+	}
 }
 
+
+void CCamera::Update(CPlayer* pPlayer, XMFLOAT3& xmf3LookAt, float fTimeElapsed)
+{
+	XMVECTOR xmvRight = XMLoadFloat3(&pPlayer->GetRight());
+	XMVECTOR xmvUp = XMLoadFloat3(&pPlayer->GetUp());
+	XMVECTOR xmvLook = XMLoadFloat3(&pPlayer->GetLook());
+	XMFLOAT3 xmfPPos = pPlayer->GetPosition();
+
+	// Player를 기준으로 하는 회전 행렬
+	XMMATRIX xmmtx4Rotate;
+	xmmtx4Rotate.r[0] = xmvRight;
+	xmmtx4Rotate.r[1] = xmvUp;
+	xmmtx4Rotate.r[2] = xmvLook;
+	xmmtx4Rotate.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// 현재 위치에서, 플레이어 위치와 방향 및 오프셋(카메라 거리)에 기반하여 카메라 위치 조정
+	XMVECTOR xmvPosition = XMLoadFloat3(&xmfPPos);
+	XMVECTOR xmvOffset = XMVector3TransformCoord(XMLoadFloat3(&pPlayer->GetCameraOffset()), xmmtx4Rotate);
+	XMVECTOR xmvNewPosition = XMVectorAdd(XMLoadFloat3(&xmfPPos), xmvOffset);
+	XMVECTOR xmvDirection = XMVectorSubtract(xmvNewPosition, xmvPosition);
+
+	float fLength = XMVectorGetX(XMVector3Length(xmvDirection));
+	xmvDirection = XMVector3Normalize(xmvDirection);
+
+	float fTimeLagScale = fTimeElapsed * 4.0f;
+	float fDistance = fLength * fTimeLagScale;
+	if (fDistance > fLength) fDistance = fLength;
+	if (fLength < 0.01f) fDistance = fLength;
+	if (fDistance > 0)
+	{
+		XMStoreFloat3(&xmfPPos, XMVectorAdd(xmvPosition, XMVectorScale(xmvDirection, fDistance)));
+		XMFLOAT3 pUp = pPlayer->GetUp();
+		SetLookAt(xmfPPos, pUp);
+	}
+}

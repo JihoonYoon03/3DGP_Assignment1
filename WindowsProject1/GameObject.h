@@ -1,43 +1,50 @@
 ﻿#pragma once
 
 #include "Mesh.h"
+#include "Camera.h"
 
 class CGameObject
 {
 public:
 	CGameObject() {}
-	~CGameObject();
+	virtual ~CGameObject();
+
+	void SetActive(bool bActive) { m_bActive = bActive; }
 
 	void SetMesh(CMesh* pMesh);
-	void SetColor(DWORD dwColor);
+	void SetColor(DWORD dwColor) { m_dwColor = dwColor; }
+
 	void SetPosition(float x, float y, float z);
-	void SetRotation(float x, float y, float z);
-	void SetRotationSpeed(float x, float y, float z);
+	void SetPosition(XMFLOAT3& xmf3Position);
 	
-	void Move(float x, float y, float z);
-	void Rotate(float x, float y, float z);
+	void SetMovingDirection(const XMFLOAT3& xmf3MovingDirection);
+	void SetMovingSpeed(float fSpeed) { m_fMovingSpeed = fSpeed; }
+	void SetMovingRange(float fRange) { m_fMovingRange = fRange; }
 
-	// 메쉬 정점 하나를 게임 객체 위치와 방향을 통해 월드 좌표 변환을 한다
-	CPoint3D WorldTransform(CPoint3D& f3Model);
+	void SetRotationAxis(const XMFLOAT3& xmf3RotationAxis);
+	void SetRotationSpeed(float fSpeed) { m_fRotationSpeed = fSpeed; }
 
+	void Move(XMFLOAT3& xmf3Direction, float fSpeed);
+
+	void Rotate(float fPitch = 10.f, float fYaw = 10.f, float fRoll = 10.f);
+	void Rotate(XMFLOAT3& xmf3Axis, float fAngle);
+
+	virtual void OnUpdateTransform() { }
+	
 	virtual void Animate(float fElapsedTime);
-	virtual void Render(HDC hDCFrameBuffer);
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
 
-private:
-	// 게임 객체의 월드 위치
-	float m_fxPosition = 0.f;
-	float m_fyPosition = 0.f;
-	float m_fzPosition = 0.f;
+protected:
+	bool						m_bActive = true;
 
-	// 회전량(반시계 방향)
-	float m_fxRotation = 0.f;
-	float m_fyRotation = 0.f;
-	float m_fzRotation = 0.f;
+	XMFLOAT4X4					m_xmf4x4World = Matrix4x4::Identity();
 
-	// 회전 속도
-	float m_fxRotationSpeed = 0.f;
-	float m_fyRotationSpeed = 0.f;
-	float m_fzRotationSpeed = 0.f;
+	XMFLOAT3					m_xmf3MovingDirection = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	float						m_fMovingSpeed = 0.0f;
+	float						m_fMovingRange = 0.0f;
+
+	XMFLOAT3					m_xmf3RotationAxis = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	float						m_fRotationSpeed = 0.0f;
 
 	// 모양(메쉬/모델)
 	CMesh* m_pMesh = nullptr;

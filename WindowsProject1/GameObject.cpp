@@ -1,5 +1,6 @@
 ﻿#include "framework.h"
 #include "GameObject.h"
+#include "GraphicsPipeline.h"
 
 CGameObject::~CGameObject()
 {
@@ -12,99 +13,80 @@ void CGameObject::SetMesh(CMesh* pMesh)
 	if (pMesh) pMesh->AddRef();
 }
 
-void CGameObject::SetColor(DWORD dwColor)
-{
-	m_dwColor = dwColor;
-}
-
 void CGameObject::SetPosition(float x, float y, float z)
 {
-	m_fxPosition = x;
-	m_fyPosition = y;
-	m_fzPosition = z;
+	m_xmf4x4World._41 = x;
+	m_xmf4x4World._42 = y;
+	m_xmf4x4World._43 = z;
 }
 
-void CGameObject::SetRotation(float x, float y, float z)
+void CGameObject::SetPosition(XMFLOAT3& xmf3Position)
 {
-	m_fxRotation = x;
-	m_fyPosition = y;
-	m_fzPosition = z;
+	m_xmf4x4World._41 = xmf3Position.x;
+	m_xmf4x4World._42 = xmf3Position.y;
+	m_xmf4x4World._43 = xmf3Position.z;
 }
 
-void CGameObject::SetRotationSpeed(float x, float y, float z)
+void CGameObject::SetMovingDirection(const XMFLOAT3& xmf3MovingDirection)
 {
-	m_fxRotationSpeed = x;
-	m_fyRotationSpeed = y;
-	m_fzRotationSpeed = z;
+	XMStoreFloat3(
+		&m_xmf3MovingDirection,
+		XMVector3Normalize(XMLoadFloat3(&xmf3MovingDirection)
+		));
 }
 
-void CGameObject::Move(float x, float y, float z)
+void CGameObject::SetRotationAxis(const XMFLOAT3& xmf3RotationAxis)
 {
-	m_fxPosition += x;
-	m_fyPosition += y;
-	m_fzPosition += z;
+	XMStoreFloat3(
+		&m_xmf3RotationAxis,
+		XMVector3Normalize(XMLoadFloat3(&xmf3RotationAxis)
+		));
 }
 
-void CGameObject::Rotate(float x, float y, float z)
+void CGameObject::Move(XMFLOAT3& xmf3Direction, float fSpeed)
 {
-	m_fxRotation += x;
-	m_fyRotation += y;
-	m_fzRotation += z;
+	SetPosition(
+		m_xmf4x4World._41 + xmf3Direction.x * fSpeed,
+		m_xmf4x4World._42 + xmf3Direction.y * fSpeed,
+		m_xmf4x4World._43 + xmf3Direction.z * fSpeed
+	);
 }
 
-CPoint3D CGameObject::WorldTransform(CPoint3D& f3Model)
+void CGameObject::Rotate(float fPitch, float fYaw, float fRoll)
 {
-	float fPitch =	DegreeToRadian(m_fxRotation);
-	float fYaw =	DegreeToRadian(m_fyRotation);
-	float fRoll =	DegreeToRadian(m_fzRotation);
+	XMMATRIX xmmRotate = XMMatrixRotationRollPitchYaw(
+		XMConvertToRadians(fPitch), XMConvertToRadians(fYaw), XMConvertToRadians(fRoll));
+	XMStoreFloat4x4(&m_xmf4x4World, XMMatrixMultiply(xmmRotate, XMLoadFloat4x4(&m_xmf4x4World)));
+}
 
-	CPoint3D f3World = f3Model;
-	CPoint3D f3Rotated = f3Model;
-	
-	// 회전
-	if (fPitch != 0.f) {
-		f3Rotated.y = float(f3World.y * cos(fPitch) - f3World.z * sin(fPitch));
-		f3Rotated.z = float(f3World.y * sin(fPitch) + f3World.z * cos(fPitch));
-		f3World.y = f3Rotated.y;
-		f3World.z = f3Rotated.z;
-	}
-	if (fYaw != 0.f) {
-		f3Rotated.x = float(f3World.x * cos(fYaw) + f3World.z * sin(fYaw));
-		f3Rotated.z = float(-f3World.x * sin(fYaw) + f3World.z * cos(fYaw));
-		f3World.x = f3Rotated.x;
-		f3World.z = f3Rotated.z;
-	}
-	if (fRoll != 0.f) {
-		f3Rotated.x = float(f3World.x * cos(fRoll) - f3World.y * sin(fRoll));
-		f3Rotated.y = float(f3World.x * sin(fRoll) + f3World.y * cos(fRoll));
-		f3World.x = f3Rotated.x;
-		f3World.y = f3Rotated.y;
-	}
-
-	//평행 이동 변환
-	f3World.x += m_fxPosition;
-	f3World.y += m_fyPosition;
-	f3World.z += m_fzPosition;
-
-	return f3World;
+void CGameObject::Rotate(XMFLOAT3& xmf3RotationAxis, float fAngle)
+{
+	XMMATRIX xmmRotate = XMMatrixRotationAxis(
+		XMLoadFloat3(&xmf3RotationAxis), XMConvertToRadians(fAngle));
+	XMStoreFloat4x4(&m_xmf4x4World, XMMatrixMultiply(xmmRotate, XMLoadFloat4x4(&m_xmf4x4World)));
 }
 
 void CGameObject::Animate(float fElapsedTime)
 {
-	Rotate(	m_fxRotationSpeed * fElapsedTime,
-			m_fyRotationSpeed *	fElapsedTime,
-			m_fzRotationSpeed * fElapsedTime);
+	if (m_fRotationSpeed != 0.0f) Rotate(m_xmf3RotationAxis, m_fRotationSpeed * fElapsedTime);
+	if (m_fMovingSpeed != 0.0f) Move(m_xmf3MovingDirection, m_fMovingSpeed * fElapsedTime);
 }
 
-void CGameObject::Render(HDC hDCFrameBuffer)
+void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 {
-	HPEN hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
-	HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
-	HBRUSH hBrush = ::CreateSolidBrush(m_dwColor);
-	HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
-	if (m_pMesh) m_pMesh->Render(hDCFrameBuffer);
-	::SelectObject(hDCFrameBuffer, hOldPen);
-	::SelectObject(hDCFrameBuffer, hOldBrush);
-	::DeleteObject(hPen);
-	::DeleteObject(hBrush);
+	if (m_pMesh) {
+		CGraphicsPipeline::SetWorldTransform(&m_xmf4x4World);
+
+		HPEN hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
+		HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
+		HBRUSH hBrush = ::CreateSolidBrush(m_dwColor);
+		HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
+
+		m_pMesh->Render(hDCFrameBuffer);
+
+		::SelectObject(hDCFrameBuffer, hOldPen);
+		::SelectObject(hDCFrameBuffer, hOldBrush);
+		::DeleteObject(hPen);
+		::DeleteObject(hBrush);
+	}
 }

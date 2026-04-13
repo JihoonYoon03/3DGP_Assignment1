@@ -5,13 +5,17 @@
 
 class CGraphicsPipeline {
 private:
-	static CGameObject* m_pGameObject;
-	static CCamera* m_pCamera;
+	static XMFLOAT4X4* m_pxmf4x4World;
+	static XMFLOAT4X4* m_pxmf4x4ViewProject;
+	static CViewport* m_pViewport;
 
 public:
-	static void SetGameObject(CGameObject* pGameObject) { m_pGameObject = pGameObject; }
-	static void SetCamera(CCamera* pCamera) { m_pCamera = pCamera; }
+	static void SetWorldTransform(XMFLOAT4X4* pxmf4x4World) { m_pxmf4x4World = pxmf4x4World; }
+	static void SetViewPerspectiveProjectTransform(XMFLOAT4X4* pxmf4x4ViewPerspectiveProject);
+	//	static void SetViewOrthographicProjectTransform(XMFLOAT4X4* pxmf4x4OrthographicProject);
+	static void SetViewport(CViewport* pViewport) { m_pViewport = pViewport; }
 
-	static CPoint3D ScreenTransform(CPoint3D& f3Projection);
-	static CPoint3D Project(CPoint3D& f3Model);
+	static XMFLOAT3 ScreenTransform(XMFLOAT3& xmf3Project);
+	static XMFLOAT3 Project(XMFLOAT3& xmf3Model);
+	//	static XMFLOAT3 Transform(XMFLOAT3& xmf3Model);
 };

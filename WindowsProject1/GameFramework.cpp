@@ -12,6 +12,8 @@ void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	
 	// 플레이어와 게임 세계(씬)을 생성한다.
 	BuildObjects();
+
+	m_pszFrameRate = L"LabProject (";
 }
 
 void CGameFramework::OnDestroy()
@@ -24,7 +26,9 @@ void CGameFramework::OnDestroy()
 void CGameFramework::BuildFrameBuffer()
 {
 	::GetClientRect(m_hWnd, &m_rcClient);
+
 	HDC hDC = ::GetDC(m_hWnd);
+
 	m_hDCFrameBuffer = ::CreateCompatibleDC(hDC);
 	m_hBitmapFrameBuffer =
 		::CreateCompatibleBitmap(hDC,
@@ -32,6 +36,7 @@ void CGameFramework::BuildFrameBuffer()
 			m_rcClient.bottom - m_rcClient.top);
 
 	::SelectObject(m_hDCFrameBuffer, m_hBitmapFrameBuffer);
+
 	::ReleaseDC(m_hWnd, hDC);
 	::SetBkMode(m_hDCFrameBuffer, TRANSPARENT);
 }
@@ -69,78 +74,168 @@ void CGameFramework::PresentFrameBuffer()
 
 void CGameFramework::BuildObjects()
 {
-	// 카메라를 생성하고 뷰포트와 시야각(FOV)를 설정한다.
 	CCamera* pCamera = new CCamera();
 	pCamera->SetViewport(0, 0, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+	pCamera->GeneratePerspectiveProjectionMatrix(1.01f, 500.0f, 60.0f);
 	pCamera->SetFOVAngle(60.0f);
-	
-	// 플레이어 게임 객체를 생성하고 카메라와 위치를 설정한다.
-	m_pPlayer = new CPlayer();
-	m_pPlayer->SetCamera(pCamera);
-	m_pPlayer->SetPosition(0.0f, 3.0f, -40.0f);
-	m_pPlayer->SetMoveSpeed(20.f);
 
-	// 씬 객체를 생성하고 게임 객체들을 생성한다. 
-	m_pScene = new CScene();
+	CAirplaneMesh* pAirplaneMesh = new CAirplaneMesh(6.0f, 6.0f, 1.0f);
+
+	m_pPlayer = new CAirplanePlayer();
+	m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
+	m_pPlayer->SetMesh(pAirplaneMesh);
+	m_pPlayer->SetColor(RGB(0, 0, 255));
+	m_pPlayer->SetCamera(pCamera);
+	m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 5.0f, -15.0f));
+
+	m_pScene = new CScene(m_pPlayer);
 	m_pScene->BuildObjects();
 }
 void CGameFramework::ReleaseObjects()
 {
 	// 씬 객체의 게임 객체들을 소멸하고, 씬 객체와 플레이어 객체를 소멸한다.
-	if (m_pScene) m_pScene->ReleaseObjects();
-	if (m_pScene) delete m_pScene;
+	if (m_pScene) {
+		m_pScene->ReleaseObjects();
+		delete m_pScene;
+	}
+
 	if (m_pPlayer) delete m_pPlayer;
+}
+
+void CGameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMessageID)
+	{
+	case WM_RBUTTONDOWN:
+	case WM_LBUTTONDOWN:
+		::SetCapture(hWnd);
+		::GetCursorPos(&m_ptOldCursorPos);
+		break;
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+		::ReleaseCapture();
+		break;
+	case WM_MOUSEMOVE:
+		break;
+	default:
+		if (m_pScene) m_pScene->OnProcessingMouseMessage(hWnd, nMessageID, wParam, lParam);
+		break;
+	}
+}
+
+void CGameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMessageID)
+	{
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case VK_ESCAPE:
+			::PostQuitMessage(0);
+			break;
+		case VK_RETURN:
+			break;
+		case VK_CONTROL:
+			break;
+		default:
+			m_pScene->OnProcessingKeyboardMessage(hWnd, nMessageID, wParam, lParam);
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+LRESULT CALLBACK CGameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMessageID)
+	{
+	case WM_ACTIVATE:
+	{
+		if (LOWORD(wParam) == WA_INACTIVE)
+			GET_SINGLE(CGameTimer).Stop();
+		else
+			GET_SINGLE(CGameTimer).Start();
+		break;
+	}
+	case WM_SIZE:
+		break;
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+	case WM_MOUSEMOVE:
+		OnProcessingMouseMessage(hWnd, nMessageID, wParam, lParam);
+		break;
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+		OnProcessingKeyboardMessage(hWnd, nMessageID, wParam, lParam);
+		break;
+	}
+	return(0);
 }
 
 void CGameFramework::ProcessInput()
 {
 	static UCHAR pKeyBuffer[256];
-	if (::GetKeyboardState(pKeyBuffer))
+	if (GetKeyboardState(pKeyBuffer))
 	{
-		float cxKeyDelta = 0.0f, cyKeyDelta = 0.0f, czKeyDelta = 0.0f;
-		
-		if (pKeyBuffer[VK_UP] & 0xF0) czKeyDelta = +1;
-		if (pKeyBuffer[VK_DOWN] & 0xF0) czKeyDelta = -1;
+		DWORD dwDirection = 0;
+		if (pKeyBuffer[VK_UP] & 0xF0) dwDirection |= DIR_FORWARD;
+		if (pKeyBuffer[VK_DOWN] & 0xF0) dwDirection |= DIR_BACKWARD;
+		if (pKeyBuffer[VK_LEFT] & 0xF0) dwDirection |= DIR_LEFT;
+		if (pKeyBuffer[VK_RIGHT] & 0xF0) dwDirection |= DIR_RIGHT;
+		if (pKeyBuffer[VK_PRIOR] & 0xF0) dwDirection |= DIR_UP;
+		if (pKeyBuffer[VK_NEXT] & 0xF0) dwDirection |= DIR_DOWN;
 
-		if (pKeyBuffer[VK_LEFT] & 0xF0) cxKeyDelta = -1;
-		if (pKeyBuffer[VK_RIGHT] & 0xF0) cxKeyDelta = +1;
-
-		if (pKeyBuffer[VK_PRIOR] & 0xF0) cyKeyDelta = +1;
-		if (pKeyBuffer[VK_NEXT] & 0xF0) cyKeyDelta = -1;
-
-		float dt = DELTA_TIME;
-		cxKeyDelta *= dt;
-		cyKeyDelta *= dt;
-		czKeyDelta *= dt;
-
-		m_pPlayer->Move(cxKeyDelta, cyKeyDelta, czKeyDelta);
+		if (dwDirection) m_pPlayer->Move(dwDirection, 0.15f);
 	}
+
+	if (GetCapture() == m_hWnd)
+	{
+		SetCursor(NULL);
+		POINT ptCursorPos;
+		GetCursorPos(&ptCursorPos);
+		float cxMouseDelta = (float)(ptCursorPos.x - m_ptOldCursorPos.x) / 3.0f;
+		float cyMouseDelta = (float)(ptCursorPos.y - m_ptOldCursorPos.y) / 3.0f;
+		SetCursorPos(m_ptOldCursorPos.x, m_ptOldCursorPos.y);
+		if (cxMouseDelta || cyMouseDelta)
+		{
+			if (pKeyBuffer[VK_RBUTTON] & 0xF0)
+				m_pPlayer->Rotate(cyMouseDelta, 0.0f, -cxMouseDelta);
+			else
+				m_pPlayer->Rotate(cyMouseDelta, cxMouseDelta, 0.0f);
+		}
+	}
+
+	m_pPlayer->Update(GET_SINGLE(CGameTimer).GetTimeElapsed());
 }
 
 void CGameFramework::AnimateObjects()
 {
-	// deltatime 추가 필요
-
-	if (m_pScene) m_pScene->Animate(DELTA_TIME);
+	float fTimeElapsed = GET_SINGLE(CGameTimer).GetTimeElapsed();
+	if (m_pPlayer) m_pPlayer->Animate(fTimeElapsed);
+	if (m_pScene) m_pScene->Animate(fTimeElapsed);
 }
 
 void CGameFramework::FrameAdvance()
 {
-	GET_SINGLE(CTimer).Update();
+	GET_SINGLE(CGameTimer).Tick(60.0f);
 
-	// 사용자 입력을 처리한다.
 	ProcessInput();
-	
-	// 게임 세계를 애니메이션(움직이게)한다. 
+
 	AnimateObjects();
-	
-	// 렌더링을 할 대상 화면(비트맵)을 지운다. 
-	ClearFrameBuffer(RGB(90, 103, 224));
-	
-	// 씬을 렌더링한다.
+
+	ClearFrameBuffer(RGB(75, 45, 105));
+
 	CCamera* pCamera = m_pPlayer->GetCamera();
 	if (m_pScene) m_pScene->Render(m_hDCFrameBuffer, pCamera);
 
-	// 렌더링을 한 화면(비트맵)을 클라이언트 영역으로 복사한다.
+	if (m_pPlayer) m_pPlayer->Render(m_hDCFrameBuffer, pCamera);
+
 	PresentFrameBuffer();
+
+	GET_SINGLE(CGameTimer).GetFrameRate((LPTSTR)m_pszFrameRate.c_str() + 12, 37);
+	::SetWindowText(m_hWnd, m_pszFrameRate.c_str());
 }

@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+/*// == XMFLOAT3
 class CPoint3D {
 public:
 	CPoint3D() {}
@@ -10,14 +11,15 @@ public:
 	float y = 0.f;
 	float z = 0.f;
 };
+*/
 
 class CVertex {
 public:
-	CVertex() {}
-	CVertex(float x, float y, float z) : m_f3Position{ CPoint3D(x, y, z) } {}
+	CVertex() : m_xmf3Position{ XMFLOAT3(0.f, 0.f, 0.f) } {}
+	CVertex(float x, float y, float z) : m_xmf3Position{ XMFLOAT3(x, y, z) } {}
 	virtual ~CVertex() {}
 
-	CPoint3D	m_f3Position;
+	XMFLOAT3	m_xmf3Position;
 };
 
 class CPolygon {
@@ -30,7 +32,8 @@ public:
 	int			m_nVertices	= 0;
 	CVertex*	m_pVertices	= nullptr;
 
-	void SetVertex(int nIndex, CVertex vertex);
+	void SetVertex(int nIndex, CVertex& vertex);
+	void SetVertex(int nIndex, const CVertex& vertex);
 };
 
 class CMesh {
@@ -61,4 +64,10 @@ class CCubeMesh : public CMesh {
 public:
 	CCubeMesh(float fWidth = 4.f, float fHeight = 4.f, float fDepth = 4.f);
 	virtual ~CCubeMesh();
+};
+
+class CAirplaneMesh : public CMesh {
+public:
+	CAirplaneMesh(float fWidth = 20.f, float fHeight = 20.f, float fDepth = 4.f);
+	virtual ~CAirplaneMesh();
 };

@@ -1,17 +1,22 @@
 ﻿#pragma once
 
-#include "Mesh.h"
+//#include "Mesh.h"
 
 class CViewport {
 public:
+	CViewport() {}
 	CViewport(int nLeft, int nTop, int nWidth, int nHeight);
 	virtual ~CViewport() {}
 
-	int m_nLeft;
-	int m_nTop;
-	int m_nWidth;
-	int m_nHeight;
+	int m_nLeft = 0;
+	int m_nTop = 0;
+	int m_nWidth = 0;
+	int m_nHeight = 0;
+
+	void SetViewport(int nLeft, int nTop, int nWidth, int nHeight);
 };
+
+class CPlayer;
 
 class CCamera
 {
@@ -19,39 +24,43 @@ public:
 	CCamera();
 	virtual ~CCamera();
 
-	CPoint3D CameraTransform(CPoint3D& f3World);
-	CPoint3D ProjectionTransform(CPoint3D& f3Camera);
-	CPoint3D ScreenTransform(CPoint3D& f3Projection);
-
-	void SetPosition(float x, float y, float z);
-	void SetRotation(float fPitch, float fYaw, float fRoll);
+	void GenerateViewMatrix();
+	void GeneratePerspectiveProjectionMatrix(float fNearPlaneDistance, float fFarPlaneDistance, float fFOVAngle);
+	void GenerateOrthographicProjectionMatrix(float fNearPlaneDistance, float fFarPlaneDistance, float fWidth, float hHeight);
 
 	// 카메라의 뷰포트와 시야각을 설정한다.
-	void SetViewport(int xStart, int yStart, int nWidth, int nHeight);
+	void SetViewport(int xTopLeft, int yTopLeft, int nWidth, int nHeight);
 	void SetFOVAngle(float fFOVAngle);
 
-	//카메라를 이동하고 회전한다.
+	void SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
+	void SetLookAt(XMFLOAT3& xmf3Position, XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
+
+	// 카메라를 이동하고 회전한다.
+	void Move(const XMFLOAT3& xmf3Shift);
 	void Move(float x, float y, float z);
-	void Rotate(float fPitch, float fYaw, float fRoll);
+	void Rotate(float fPitch = 0.f, float fYaw = 0.f, float fRoll = 0.f);
+	void Update(CPlayer* pPlayer, XMFLOAT3& xmf3LookAt, float fTimeElapsed = 0.016f);
+
+	XMFLOAT4X4	m_xmf4x4View = Matrix4x4::Identity();
+	XMFLOAT4X4	m_xmf4x4PerspectiveProject = Matrix4x4::Identity();
+	XMFLOAT4X4	m_xmf4x4ViewPerspectiveProject = Matrix4x4::Identity();
+
+	CViewport	m_Viewport;
+
 private:
-	//위치(월드 좌표계)
-	float m_fxPosition = 0.0f;
-	float m_fyPosition = 0.0f;
-	float m_fzPosition = 0.0f;
+	// 위치, 기저벡터
+	XMFLOAT3	m_xmf3Position = XMFLOAT3(0.f, 0.f, 0.f);
+	XMFLOAT3	m_xmf3Right = XMFLOAT3(1.f, 0.f, 0.f);
+	XMFLOAT3	m_xmf3Up	= XMFLOAT3(0.f, 1.f, 0.f);
+	XMFLOAT3	m_xmf3Look	= XMFLOAT3(0.f, 0.f, 1.f);
 
-	//회전(카메라 좌표계)
-	float m_fxRotation = 0.0f;
-	float m_fyRotation = 0.0f;
-	float m_fzRotation = 0.0f;
-
-	//카메라의 시야각, 투영 사각형까지의 거리
+	// 카메라의 시야각, 투영 사각형까지의 거리
 	float m_fFOVAngle = 90.0f;
 	float m_fProjectRectDistance = 1.0f;
 
-	//뷰포트
-	CViewport* m_pViewport = nullptr;
+	// 뷰포트
 
-	//종횡비
+	// 종횡비
 	float m_fAspectRatio = FRAMEBUFFER_WIDTH / FRAMEBUFFER_HEIGHT;
 };
 
