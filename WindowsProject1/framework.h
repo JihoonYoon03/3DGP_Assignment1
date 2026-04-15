@@ -36,8 +36,6 @@ constexpr int FRAMEBUFFER_HEIGHT	= 480;
 
 #define DegreeToRadian(x)	float((x) * 3.141592654f / 180.0f)
 
-#define GET_SINGLE(type)	type::GetInstance()
-
 #define DIR_FORWARD				0x01
 #define DIR_BACKWARD			0x02
 #define DIR_LEFT				0x04
@@ -46,6 +44,8 @@ constexpr int FRAMEBUFFER_HEIGHT	= 480;
 #define DIR_DOWN				0x20
 
 #define EPSILON					1.0e-6f
+
+//#define WIREFRAME_MODE
 
 inline bool IsZero(float fValue) { return((fabsf(fValue) < EPSILON)); }
 inline bool IsEqual(float fA, float fB) { return(::IsZero(fA - fB)); }

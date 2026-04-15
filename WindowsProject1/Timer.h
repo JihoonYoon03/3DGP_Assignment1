@@ -48,4 +48,3 @@ private:
 	bool							m_bStopped;
 };
 
-#define DELTA_TIME	GET_SINGLE(CGameTimer).GetTimeElapsed()

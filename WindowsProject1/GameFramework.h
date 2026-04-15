@@ -2,6 +2,7 @@
 
 #include "Player.h"
 #include "Scene.h"
+#include "Timer.h"
 
 class CGameFramework {
 public:
@@ -56,6 +57,8 @@ private:
 
 	// 게임 객체들을 포함하는 씬(게임 세계) 클래스이다.
 	CScene*		m_pScene = nullptr;
+
+	CGameTimer  m_GameTimer;
 
 	CGameObject* m_pLockedObject = nullptr;
 

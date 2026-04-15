@@ -1,6 +1,5 @@
 ﻿#include "framework.h"
 #include "GameFramework.h"
-#include "Timer.h"
 
 void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 {
@@ -154,9 +153,9 @@ LRESULT CALLBACK CGameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMess
 	case WM_ACTIVATE:
 	{
 		if (LOWORD(wParam) == WA_INACTIVE)
-			GET_SINGLE(CGameTimer).Stop();
+			m_GameTimer.Stop();
 		else
-			GET_SINGLE(CGameTimer).Start();
+			m_GameTimer.Start();
 		break;
 	}
 	case WM_SIZE:
@@ -209,19 +208,19 @@ void CGameFramework::ProcessInput()
 		}
 	}
 
-	m_pPlayer->Update(GET_SINGLE(CGameTimer).GetTimeElapsed());
+	m_pPlayer->Update(m_GameTimer.GetTimeElapsed());
 }
 
 void CGameFramework::AnimateObjects()
 {
-	float fTimeElapsed = GET_SINGLE(CGameTimer).GetTimeElapsed();
+	float fTimeElapsed = m_GameTimer.GetTimeElapsed();
 	if (m_pPlayer) m_pPlayer->Animate(fTimeElapsed);
 	if (m_pScene) m_pScene->Animate(fTimeElapsed);
 }
 
 void CGameFramework::FrameAdvance()
 {
-	GET_SINGLE(CGameTimer).Tick(60.0f);
+	m_GameTimer.Tick(60.0f);
 
 	ProcessInput();
 
@@ -236,6 +235,6 @@ void CGameFramework::FrameAdvance()
 
 	PresentFrameBuffer();
 
-	m_pszFrameRate = std::format(L"LabProject ({} FPS)", GET_SINGLE(CGameTimer).GetFrameRate());
+	m_pszFrameRate = std::format(L"LabProject ({} FPS)", m_GameTimer.GetFrameRate());
 	::SetWindowText(m_hWnd, m_pszFrameRate.c_str());
 }

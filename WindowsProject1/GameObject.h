@@ -52,5 +52,8 @@ protected:
 	// 게임 객체의 색상이다.
 	DWORD	m_dwColor = RGB(255, 0, 0);
 
+	HPEN hPen = NULL;
+	HBRUSH hBrush = NULL;
+
 };
 

@@ -26,12 +26,6 @@ CGameTimer::~CGameTimer()
 
 }
 
-CGameTimer& CGameTimer::GetInstance()
-{
-	static CGameTimer instance;
-	return instance;
-}
-
 void CGameTimer::Tick(float fLockFPS)
 {
 	if (m_bStopped)

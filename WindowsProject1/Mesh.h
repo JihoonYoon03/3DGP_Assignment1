@@ -32,7 +32,8 @@ public:
 	int			m_nVertices	= 0;
 	CVertex*	m_pVertices	= nullptr;
 
-	void SetVertex(int nIndex, CVertex& vertex);
+	XMFLOAT3	m_xmf3Normal;
+
 	void SetVertex(int nIndex, const CVertex& vertex);
 };
 

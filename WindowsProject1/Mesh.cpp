@@ -15,13 +15,6 @@ CPolygon::~CPolygon()
 	if (m_pVertices) delete[] m_pVertices;
 }
 
-void CPolygon::SetVertex(int nIndex, CVertex& vertex)
-{
-	if ((0 <= nIndex) && (nIndex < m_nVertices) && m_pVertices) {
-		m_pVertices[nIndex] = vertex;
-	}
-}
-
 void CPolygon::SetVertex(int nIndex, const CVertex& vertex)
 {
 	if ((0 <= nIndex) && (nIndex < m_nVertices) && m_pVertices) {
@@ -111,42 +104,27 @@ void CMesh::Render(HDC hDCFrameBuffer)
 	}
 
 #else
-
 	// 모든 다각형 렌더링
-	for (int j = 0; j < m_nPolygons; j++) {
+	for (int j = 0; j < m_nPolygons; j++)
+	{
 		int nVertices = m_ppPolygons[j]->m_nVertices;
 		CVertex* pVertices = m_ppPolygons[j]->m_pVertices;
 
-		// 첫 정점 원근 투영 변환
 		f3PrevProject = f3InitProject = CGraphicsPipeline::Project(pVertices[0].m_xmf3Position);
+		bPrevInside = bInitInside = (-1.0f <= f3InitProject.x) && (f3InitProject.x <= 1.0f) &&
+			(-1.0f <= f3InitProject.y) && (f3InitProject.y <= 1.0f);
 
-		// 투영 사각형 포함 여부 체크
-		bPrevInside = bInitInside = (-1.f <= f3InitProject.x) && (f3InitProject.x <= 1.f) &&
-			(-1.f <= f3InitProject.y) && (f3InitProject.y <= 1.f);
-
-		// 모든 정점 원근 투영 변환 및 렌더링
-		for (int i = 0; i < nVertices; i++) {
-			CPoint3D f3CurProject = CGraphicsPipeline::Project(pVertices[i].m_xmf3Position);
-
-			bCurInside = (-1.f <= f3CurProject.x) && (f3CurProject.x <= 1.f) &&
-				(-1.f <= f3CurProject.y) && (f3CurProject.y <= 1.f);
-
-			// 변환된 점이 투영 사각형 포함 시 이전과 현재 점을 선분으로 그림
-			if (((f3PrevProject.z >= 0.f) || (f3CurProject.z >= 0.f))
-				&& ((bCurInside || bPrevInside))) {
-				::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3CurProject);
-				f3PrevProject = f3CurProject;
-				bPrevInside = bCurInside;
-			}
+		for (int i = 1; i < nVertices; i++)
+		{
+			XMFLOAT3 f3CurrentProject = CGraphicsPipeline::Project(pVertices[i].m_xmf3Position);
+			bCurInside = (-1.0f <= f3CurrentProject.x) && (f3CurrentProject.x <= 1.0f) && (-1.0f <= f3CurrentProject.y) && (f3CurrentProject.y <= 1.0f);
+			if (((0.0f <= f3CurrentProject.z) && (f3CurrentProject.z <= 1.0f)) && ((bCurInside || bPrevInside))) ::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3CurrentProject);
+			f3PrevProject = f3CurrentProject;
+			bPrevInside = bCurInside;
 		}
+		if (((0.0f <= f3InitProject.z) && (f3InitProject.z <= 1.0f)) && ((bInitInside || bPrevInside)))
+			::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3InitProject);
 	}
-
-	// 마지막 정점과 시작점 잇기
-	if (((f3PrevProject.z >= 0.f) || (f3InitProject.z >= 0.f)) &&
-		((bInitInside || bPrevInside))) {
-		::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3InitProject);
-	}
-
 #endif
 }
 

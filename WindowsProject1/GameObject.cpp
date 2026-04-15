@@ -5,6 +5,9 @@
 CGameObject::~CGameObject()
 {
 	if (m_pMesh) m_pMesh->Release();
+
+	if (hPen)	::DeleteObject(hPen);
+	if (hBrush) ::DeleteObject(hBrush);
 }
 
 void CGameObject::SetMesh(CMesh* pMesh)
@@ -77,16 +80,19 @@ void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 	if (m_pMesh) {
 		CGraphicsPipeline::SetWorldTransform(&m_xmf4x4World);
 
-		HPEN hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
+		if (not hPen) {
+			hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
+		}
+		if (not hBrush) {
+			hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
+		}
+		
 		HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
-		HBRUSH hBrush = ::CreateSolidBrush(m_dwColor);
 		HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
 
 		m_pMesh->Render(hDCFrameBuffer);
 
 		::SelectObject(hDCFrameBuffer, hOldPen);
 		::SelectObject(hDCFrameBuffer, hOldBrush);
-		::DeleteObject(hPen);
-		::DeleteObject(hBrush);
 	}
 }
