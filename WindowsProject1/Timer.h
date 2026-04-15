@@ -22,7 +22,7 @@ public:
 	void Stop();
 	void Reset();
 
-	unsigned long GetFrameRate(LPTSTR lpszString = NULL, int nCharacters = 0);
+	unsigned long GetFrameRate();
 	float GetTimeElapsed();
 	float GetTotalTime();
 

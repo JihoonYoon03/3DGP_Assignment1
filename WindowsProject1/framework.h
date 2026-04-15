@@ -9,6 +9,12 @@
 // Windows 헤더 파일
 #include <windows.h>
 
+// C++ 런타임 헤더 파일
+#include <memory>
+#include <string>
+#include <vector>
+#include <format>
+
 // 간단한 사운드 출력, 시스템 시간 확인용 (Multimedia system)
 #include <Mmsystem.h>
 #pragma comment(lib, "winmm.lib")
@@ -20,10 +26,6 @@
 #include <DirectXCollision.h>
 #include <wrl.h>
 
-// C++ 런타임 헤더 파일
-#include <memory>
-#include <string>
-#include <vector>
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;

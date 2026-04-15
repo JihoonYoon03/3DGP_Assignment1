@@ -236,6 +236,6 @@ void CGameFramework::FrameAdvance()
 
 	PresentFrameBuffer();
 
-	GET_SINGLE(CGameTimer).GetFrameRate((LPTSTR)m_pszFrameRate.c_str() + 12, 37);
+	m_pszFrameRate = std::format(L"LabProject ({} FPS)", GET_SINGLE(CGameTimer).GetFrameRate());
 	::SetWindowText(m_hWnd, m_pszFrameRate.c_str());
 }

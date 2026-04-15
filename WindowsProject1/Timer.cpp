@@ -110,14 +110,8 @@ void CGameTimer::Reset()
 	m_bStopped = false;
 }
 
-unsigned long CGameTimer::GetFrameRate(LPTSTR lpszString, int nCharacters)
+unsigned long CGameTimer::GetFrameRate()
 {
-	if (lpszString)
-	{
-		_itow_s(m_nCurrentFrameRate, lpszString, nCharacters, 10);
-		wcscat_s(lpszString, nCharacters, L" FPS)");
-	}
-
 	return m_nCurrentFrameRate;
 }
 
