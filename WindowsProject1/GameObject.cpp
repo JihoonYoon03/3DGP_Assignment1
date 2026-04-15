@@ -90,7 +90,7 @@ void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 		HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
 		HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
 
-		m_pMesh->Render(hDCFrameBuffer);
+		m_pMesh->Render(hDCFrameBuffer, pCamera);
 
 		::SelectObject(hDCFrameBuffer, hOldPen);
 		::SelectObject(hDCFrameBuffer, hOldBrush);

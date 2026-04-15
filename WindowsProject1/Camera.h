@@ -35,6 +35,8 @@ public:
 	void SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
 	void SetLookAt(XMFLOAT3& xmf3Position, XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
 
+	const XMFLOAT3& GetLook() const { return m_xmf3Look; }
+
 	// 카메라를 이동하고 회전한다.
 	void Move(const XMFLOAT3& xmf3Shift);
 	void Move(float x, float y, float z);

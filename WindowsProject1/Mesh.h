@@ -22,30 +22,26 @@ public:
 	XMFLOAT3	m_xmf3Position;
 };
 
-class CPolygon {
+class CTriangle {
 public:
-	CPolygon() {}
-	CPolygon(int nVertices);
-	virtual ~CPolygon();
+	CTriangle() {}
+	CTriangle(const uint32_t& index) : m_StartIndex(index) {}
+	virtual ~CTriangle() {}
 
-	// 폴리곤을 구성하는 정점들의 리스트
-	int			m_nVertices	= 0;
-	CVertex*	m_pVertices	= nullptr;
+	uint32_t			m_StartIndex;
+	XMFLOAT3			m_Normal;
 
-	XMFLOAT3	m_xmf3Normal;
-
-	void SetVertex(int nIndex, const CVertex& vertex);
+	void CalculateNormal(const CVertex& vertex0, const CVertex& vertex1, const CVertex& vertex2);
 };
 
 class CMesh {
 public:
 	CMesh() {}
-	CMesh(int nPolygons);
 	virtual ~CMesh();
 
-	void SetPolygon(int nIndex, CPolygon* pPolygon);
+	void SetMesh(std::vector<CVertex>&& vertices, std::vector<uint32_t>&& indices);
 
-	virtual void Render(HDC hDCFrameBuffer);
+	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera);
 
 	void AddRef() { m_nReferences++; }
 	void Release();
@@ -53,8 +49,12 @@ public:
 private:
 	int m_nReferences = 1;
 	
-	int			m_nPolygons = 0;
-	CPolygon**	m_ppPolygons = nullptr;
+	// raw 데이터 (정점, 인덱스)
+	std::vector<CVertex>	m_Vertices;
+	std::vector<uint32_t>	m_Indices;
+
+	// 평면 데이터 (인덱스 위치, 노멀)
+	std::vector<CTriangle>	m_Triangles;
 
 	// 최종적으로 그려낼 정점 모임
 	size_t m_nDrawingPoints = 0;
