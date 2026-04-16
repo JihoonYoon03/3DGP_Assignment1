@@ -55,7 +55,7 @@ void CMesh::SetMesh(std::vector<CVertex>&& vertices, std::vector<uint32_t>&& ind
 	// 3개 단위의 인덱스가 아닌 경우 예외처리
 	if (m_Indices.size() % 3 != 0) {
 		std::wstring buf = std::format(L"Mesh Data Error :: Vertices {} / Indices {}\n", m_Vertices.size(), m_Indices.size());
-		OutputDebugString(buf.c_str());
+		OutputDebugStringW(buf.c_str());
 		return;
 	}
 
@@ -92,10 +92,13 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 	XMFLOAT3 f3InitProject, f3PrevProject, f3Intersect;
 	bool bPrevInside = false, bInitInside = false, bCurInside = false, bIntersectInside = false;
 
+	// 출력할 삼각형들만 저장하는 리스트
+	std::vector<CTriangle*> renderList;
+
 #ifndef WIREFRAME_MODE
 
 	// 모든 다각형 렌더링
-	for (const auto& triangle : m_Triangles) {
+	for (auto& triangle : m_Triangles) {
 
 		// 은면제거
 		// 매쉬 로컬 좌표계에서 평면 노멀과 카메라 look의 내적 수행
@@ -106,21 +109,36 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 
 		// 카메라 좌표계로 먼저 변환
 		XMFLOAT4X4 viewMatrix = camera->GetViewMatrix();
-		
+
 		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::WorldViewTransform(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position, viewMatrix);
 		XMFLOAT3 f3CurProject2 = CGraphicsPipeline::WorldViewTransform(m_Vertices[m_Indices[triangle.m_StartIndex + 1]].m_xmf3Position, viewMatrix);
 		XMFLOAT3 f3CurProject3 = CGraphicsPipeline::WorldViewTransform(m_Vertices[m_Indices[triangle.m_StartIndex + 2]].m_xmf3Position, viewMatrix);
 
+		triangle.m_averageZ = (f3CurProject1.z + f3CurProject2.z + f3CurProject3.z) / 3;
+
+		// 카메라 뒤에 있다면 컬링
 		if (f3CurProject1.z < 0.f || f3CurProject2.z < 0.f || f3CurProject3.z < 0.f) {
 			OutputDebugStringW(std::wstring{ L"뒤로 넘어감 체킹\n" }.c_str());
 			continue;
 		}
 
+		// 렌더 대상 리스트에 해당 삼각형 저장
+		renderList.push_back(&triangle);
+	}
+
+	// z좌표 기준 내림차순 정렬, 먼 것부터 렌더링
+	std::sort(renderList.begin(), renderList.end(), [](const CTriangle* a, const CTriangle* b) {
+		return a->m_averageZ > b->m_averageZ;
+		});
+
+	for (const auto* triangle : renderList)	{
+
 		// 모든 정점 원근 투영 변환 및 렌더링
 		XMFLOAT4X4 PerspectiveProject = camera->GetPerspectiveProjectMatrix();
-		f3CurProject1 = Vector3::TransformCoord(f3CurProject1, PerspectiveProject);
-		f3CurProject2 = Vector3::TransformCoord(f3CurProject2, PerspectiveProject);
-		f3CurProject3 = Vector3::TransformCoord(f3CurProject3, PerspectiveProject);
+
+		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle->m_StartIndex]].m_xmf3Position);
+		XMFLOAT3 f3CurProject2 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle->m_StartIndex + 1]].m_xmf3Position);
+		XMFLOAT3 f3CurProject3 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle->m_StartIndex + 2]].m_xmf3Position);
 
 		f3CurProject1 = CGraphicsPipeline::ScreenTransform(f3CurProject1);
 		f3CurProject2 = CGraphicsPipeline::ScreenTransform(f3CurProject2);

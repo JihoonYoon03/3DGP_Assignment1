@@ -30,6 +30,7 @@ public:
 
 	uint32_t			m_StartIndex;
 	XMFLOAT3			m_Normal;
+	float				m_averageZ = 0;
 
 	void CalculateNormal(const CVertex& vertex0, const CVertex& vertex1, const CVertex& vertex2);
 };
