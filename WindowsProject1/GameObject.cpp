@@ -87,7 +87,7 @@ void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 			hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
 		}
 		if (not hBrush) {
-			hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
+			hBrush = ::CreateSolidBrush(m_dwColor);
 		}
 		
 		HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);

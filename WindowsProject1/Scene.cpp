@@ -117,5 +117,7 @@ void CScene::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 	CGraphicsPipeline::SetViewport(&pCamera->m_Viewport);
 	CGraphicsPipeline::SetViewPerspectiveProjectTransform(&pCamera->m_xmf4x4ViewPerspectiveProject);
 
+	// TODO
+	// 오브젝트들 렌더링 순서를 깊이값 기준 정렬해야 함
 	for (int i = 0; i < m_nObjects; i++) m_ppObjects[i]->Render(hDCFrameBuffer, pCamera);
 }
