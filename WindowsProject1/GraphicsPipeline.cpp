@@ -23,6 +23,12 @@ void CGraphicsPipeline::SetViewPerspectiveProjectTransform(XMFLOAT4X4* pxmf4x4Vi
 //	return(f3Screen);
 //}
 
+XMFLOAT3 CGraphicsPipeline::WorldViewTransform(XMFLOAT3& xmf3Model, const XMFLOAT4X4& xmf4x4View)
+{
+	XMMATRIX xmmtxModelToView = XMMatrixMultiply(XMLoadFloat4x4(m_pxmf4x4World), XMLoadFloat4x4(&xmf4x4View));
+	return Vector3::TransformCoord(xmf3Model, xmmtxModelToView);
+}
+
 XMFLOAT3 CGraphicsPipeline::Project(XMFLOAT3& xmf3Model)
 {
 	XMMATRIX xmmtxModelToProject = XMMatrixMultiply(XMLoadFloat4x4(m_pxmf4x4World), XMLoadFloat4x4(m_pxmf4x4ViewProject));

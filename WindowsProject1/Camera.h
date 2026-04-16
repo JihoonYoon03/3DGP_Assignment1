@@ -37,6 +37,8 @@ public:
 
 	const XMFLOAT3& GetPosition() const { return m_xmf3Position; }
 	const XMFLOAT3& GetLook() const { return m_xmf3Look; }
+	const XMFLOAT4X4& GetViewMatrix() const { return m_xmf4x4View; }
+	const XMFLOAT4X4& GetPerspectiveProjectMatrix() const { return m_xmf4x4PerspectiveProject; }
 
 	// 카메라를 이동하고 회전한다.
 	void Move(const XMFLOAT3& xmf3Shift);

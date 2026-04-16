@@ -104,16 +104,28 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 
 		if (XMVectorGetX(XMVector3Dot(normal, look)) > 0.f) continue;
 
+		// 카메라 좌표계로 먼저 변환
+		XMFLOAT4X4 viewMatrix = camera->GetViewMatrix();
+		
+		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::WorldViewTransform(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position, viewMatrix);
+		XMFLOAT3 f3CurProject2 = CGraphicsPipeline::WorldViewTransform(m_Vertices[m_Indices[triangle.m_StartIndex + 1]].m_xmf3Position, viewMatrix);
+		XMFLOAT3 f3CurProject3 = CGraphicsPipeline::WorldViewTransform(m_Vertices[m_Indices[triangle.m_StartIndex + 2]].m_xmf3Position, viewMatrix);
+
+		if (f3CurProject1.z < 0.f || f3CurProject2.z < 0.f || f3CurProject3.z < 0.f) {
+			OutputDebugStringW(std::wstring{ L"뒤로 넘어감 체킹\n" }.c_str());
+			continue;
+		}
+
 		// 모든 정점 원근 투영 변환 및 렌더링
-		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position);
-		XMFLOAT3 f3CurProject2 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle.m_StartIndex + 1]].m_xmf3Position);
-		XMFLOAT3 f3CurProject3 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle.m_StartIndex + 2]].m_xmf3Position);
+		XMFLOAT4X4 PerspectiveProject = camera->GetPerspectiveProjectMatrix();
+		f3CurProject1 = Vector3::TransformCoord(f3CurProject1, PerspectiveProject);
+		f3CurProject2 = Vector3::TransformCoord(f3CurProject2, PerspectiveProject);
+		f3CurProject3 = Vector3::TransformCoord(f3CurProject3, PerspectiveProject);
 
 		f3CurProject1 = CGraphicsPipeline::ScreenTransform(f3CurProject1);
 		f3CurProject2 = CGraphicsPipeline::ScreenTransform(f3CurProject2);
 		f3CurProject3 = CGraphicsPipeline::ScreenTransform(f3CurProject3);
 
-		// 여기서 화면 잘림 여부 검사하기
 		POINT a[3] = {
 			{f3CurProject1.x, f3CurProject1.y},
 			{f3CurProject2.x, f3CurProject2.y},

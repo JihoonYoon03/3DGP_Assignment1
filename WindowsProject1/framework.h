@@ -46,7 +46,7 @@ constexpr int FRAMEBUFFER_HEIGHT	= 480;
 
 #define EPSILON					1.0e-6f
 
-#define WIREFRAME_MODE
+//#define WIREFRAME_MODE
 
 inline bool IsZero(float fValue) { return((fabsf(fValue) < EPSILON)); }
 inline bool IsEqual(float fA, float fB) { return(::IsZero(fA - fB)); }
