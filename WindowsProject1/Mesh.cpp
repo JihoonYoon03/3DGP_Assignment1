@@ -87,23 +87,22 @@ void Draw2DLine(HDC hDCFrameBuffer, XMFLOAT3& f3PrevProject, XMFLOAT3& f3CurProj
 	::LineTo(hDCFrameBuffer, (long)f3Cur.x, (long)f3Cur.y);
 }
 
-void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera)
+void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCameraPos)
 {
 	XMFLOAT3 f3InitProject, f3PrevProject, f3Intersect;
 	bool bPrevInside = false, bInitInside = false, bCurInside = false, bIntersectInside = false;
 
 #ifndef WIREFRAME_MODE
 
-	XMVECTOR look = XMLoadFloat3(&camera->GetLook());
-
 	// 모든 다각형 렌더링
 	for (const auto& triangle : m_Triangles) {
 
 		// 은면제거
+		// 매쉬 로컬 좌표계에서 평면 노멀과 카메라 look의 내적 수행
 		XMVECTOR normal = XMLoadFloat3(&triangle.m_Normal);
-		float result = XMVectorGetX(XMVector3Dot(normal, look));
+		XMVECTOR look = XMVectorSubtract(XMLoadFloat3(&m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position), LocalCameraPos);
 
-		if (result > 0.f) continue;
+		if (XMVectorGetX(XMVector3Dot(normal, look)) > 0.f) continue;
 
 		// 모든 정점 원근 투영 변환 및 렌더링
 		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position);
@@ -126,20 +125,27 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera)
 
 #else
 	// 모든 다각형 렌더링
-	for (int j = 0; j < m_nPolygons; j++)
-	{
-		int nVertices = m_ppPolygons[j]->m_nVertices;
-		CVertex* pVertices = m_ppPolygons[j]->m_pVertices;
+	for (const auto& triangle : m_Triangles) {
+		
+		// 은면제거
+		// 매쉬 로컬 좌표계에서 평면 노멀과 카메라 look의 내적 수행
+		XMVECTOR normal = XMLoadFloat3(&triangle.m_Normal);
+		XMVECTOR look = XMVectorSubtract(XMLoadFloat3(&m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position), LocalCameraPos);
 
-		f3PrevProject = f3InitProject = CGraphicsPipeline::Project(pVertices[0].m_xmf3Position);
+		if (XMVectorGetX(XMVector3Dot(normal, look)) > 0.f) continue;
+
+		f3PrevProject = f3InitProject = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position);
 		bPrevInside = bInitInside = (-1.0f <= f3InitProject.x) && (f3InitProject.x <= 1.0f) &&
-			(-1.0f <= f3InitProject.y) && (f3InitProject.y <= 1.0f);
+									(-1.0f <= f3InitProject.y) && (f3InitProject.y <= 1.0f);
 
-		for (int i = 1; i < nVertices; i++)
-		{
-			XMFLOAT3 f3CurrentProject = CGraphicsPipeline::Project(pVertices[i].m_xmf3Position);
-			bCurInside = (-1.0f <= f3CurrentProject.x) && (f3CurrentProject.x <= 1.0f) && (-1.0f <= f3CurrentProject.y) && (f3CurrentProject.y <= 1.0f);
-			if (((0.0f <= f3CurrentProject.z) && (f3CurrentProject.z <= 1.0f)) && ((bCurInside || bPrevInside))) ::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3CurrentProject);
+		for (int i = 1; i < 3; ++i)	{
+			XMFLOAT3 f3CurrentProject = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle.m_StartIndex + i]].m_xmf3Position);
+			bCurInside =	(-1.0f <= f3CurrentProject.x) && (f3CurrentProject.x <= 1.0f) &&
+							(-1.0f <= f3CurrentProject.y) && (f3CurrentProject.y <= 1.0f);
+
+			if (((0.0f <= f3CurrentProject.z) && (f3CurrentProject.z <= 1.0f)) && ((bCurInside || bPrevInside)))
+				::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3CurrentProject);
+
 			f3PrevProject = f3CurrentProject;
 			bPrevInside = bCurInside;
 		}

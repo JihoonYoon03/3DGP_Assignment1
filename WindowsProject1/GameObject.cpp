@@ -80,6 +80,9 @@ void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 	if (m_pMesh) {
 		CGraphicsPipeline::SetWorldTransform(&m_xmf4x4World);
 
+		XMMATRIX mtxWorldInv = XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_xmf4x4World));
+		XMVECTOR vLocalCameraPos = XMVector3TransformCoord(XMLoadFloat3(&pCamera->GetPosition()), mtxWorldInv);
+
 		if (not hPen) {
 			hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
 		}
@@ -90,7 +93,7 @@ void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 		HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
 		HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
 
-		m_pMesh->Render(hDCFrameBuffer, pCamera);
+		m_pMesh->Render(hDCFrameBuffer, pCamera, vLocalCameraPos);
 
 		::SelectObject(hDCFrameBuffer, hOldPen);
 		::SelectObject(hDCFrameBuffer, hOldBrush);

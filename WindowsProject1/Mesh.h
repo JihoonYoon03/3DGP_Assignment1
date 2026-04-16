@@ -41,7 +41,8 @@ public:
 
 	void SetMesh(std::vector<CVertex>&& vertices, std::vector<uint32_t>&& indices);
 
-	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera);
+	//virtual void Render(HDC hDCFrameBuffer, class CCamera* camera);
+	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera, const XMVECTOR& LocalCameraPos);
 
 	void AddRef() { m_nReferences++; }
 	void Release();

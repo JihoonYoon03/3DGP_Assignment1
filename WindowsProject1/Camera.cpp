@@ -66,12 +66,12 @@ void CCamera::GeneratePerspectiveProjectionMatrix(float fNearPlaneDistance, floa
 	);
 }
 
-void CCamera::SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
+void CCamera::SetLookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up)
 {
 	SetLookAt(m_xmf3Position, xmf3LookAt, xmf3Up);
 }
 
-void CCamera::SetLookAt(XMFLOAT3& xmf3Position, XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
+void CCamera::SetLookAt(const XMFLOAT3& xmf3Position, const XMFLOAT3& xmf3LookAt, const  XMFLOAT3& xmf3Up)
 {
 	m_xmf3Position = xmf3Position;
 	XMStoreFloat4x4(
@@ -141,26 +141,24 @@ void CCamera::Rotate(float fPitch, float fYaw, float fRoll)
 
 void CCamera::Update(CPlayer* pPlayer, XMFLOAT3& xmf3LookAt, float fTimeElapsed)
 {
-	XMVECTOR xmvRight = XMLoadFloat3(&pPlayer->GetRight());
-	XMVECTOR xmvUp = XMLoadFloat3(&pPlayer->GetUp());
-	XMVECTOR xmvLook = XMLoadFloat3(&pPlayer->GetLook());
-	XMFLOAT3 xmfPPos = pPlayer->GetPosition();
-
 	// Player를 기준으로 하는 회전 행렬
-	XMMATRIX xmmtx4Rotate;
-	xmmtx4Rotate.r[0] = xmvRight;
-	xmmtx4Rotate.r[1] = xmvUp;
-	xmmtx4Rotate.r[2] = xmvLook;
-	xmmtx4Rotate.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	XMFLOAT4X4 mtxRotate = Matrix4x4::Identity();
+	XMFLOAT3 pRight = pPlayer->GetRight();
+	XMFLOAT3 pUp = pPlayer->GetUp();
+	XMFLOAT3 pLook = pPlayer->GetLook();
+
+	mtxRotate._11 = pRight.x; mtxRotate._21 = pUp.x; mtxRotate._31 = pLook.x;
+	mtxRotate._12 = pRight.y; mtxRotate._22 = pUp.y; mtxRotate._32 = pLook.y;
+	mtxRotate._13 = pRight.z; mtxRotate._23 = pUp.z; mtxRotate._33 = pLook.z;
+	
 
 	// 현재 위치에서, 플레이어 위치와 방향 및 오프셋(카메라 거리)에 기반하여 카메라 위치 조정
-	XMVECTOR xmvPosition = XMLoadFloat3(&xmfPPos);
-	XMVECTOR xmvOffset = XMVector3TransformCoord(XMLoadFloat3(&pPlayer->GetCameraOffset()), xmmtx4Rotate);
-	XMVECTOR xmvNewPosition = XMVectorAdd(XMLoadFloat3(&xmfPPos), xmvOffset);
-	XMVECTOR xmvDirection = XMVectorSubtract(xmvNewPosition, xmvPosition);
+	XMFLOAT3 xmf3Offset = Vector3::TransformCoord(pPlayer->GetCameraOffset(), mtxRotate);
+	XMFLOAT3 xmf3Position = Vector3::Add(pPlayer->GetPosition(), xmf3Offset);
+	XMFLOAT3 xmf3Direction = Vector3::Subtract(xmf3Position, m_xmf3Position);
 
-	float fLength = XMVectorGetX(XMVector3Length(xmvDirection));
-	xmvDirection = XMVector3Normalize(xmvDirection);
+	float fLength = Vector3::Length(xmf3Direction);
+	xmf3Direction = Vector3::Normalize(xmf3Direction);
 
 	float fTimeLagScale = fTimeElapsed * 4.0f;
 	float fDistance = fLength * fTimeLagScale;
@@ -168,8 +166,7 @@ void CCamera::Update(CPlayer* pPlayer, XMFLOAT3& xmf3LookAt, float fTimeElapsed)
 	if (fLength < 0.01f) fDistance = fLength;
 	if (fDistance > 0)
 	{
-		XMStoreFloat3(&xmfPPos, XMVectorAdd(xmvPosition, XMVectorScale(xmvDirection, fDistance)));
-		XMFLOAT3 pUp = pPlayer->GetUp();
-		SetLookAt(xmfPPos, pUp);
+		m_xmf3Position = Vector3::Add(m_xmf3Position, xmf3Direction, fDistance);
+		SetLookAt(pPlayer->GetPosition(), pPlayer->GetUp());
 	}
 }

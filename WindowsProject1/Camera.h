@@ -32,9 +32,10 @@ public:
 	void SetViewport(int xTopLeft, int yTopLeft, int nWidth, int nHeight);
 	void SetFOVAngle(float fFOVAngle);
 
-	void SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
-	void SetLookAt(XMFLOAT3& xmf3Position, XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
+	void SetLookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up);
+	void SetLookAt(const XMFLOAT3& xmf3Position, const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up);
 
+	const XMFLOAT3& GetPosition() const { return m_xmf3Position; }
 	const XMFLOAT3& GetLook() const { return m_xmf3Look; }
 
 	// 카메라를 이동하고 회전한다.
