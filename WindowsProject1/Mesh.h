@@ -1,4 +1,4 @@
-ï»¿#pragma once
+#pragma once
 
 /*// == XMFLOAT3
 class CPoint3D {
@@ -47,18 +47,20 @@ public:
 
 	void AddRef() { m_nReferences++; }
 	void Release();
+	
+	BoundingOrientedBox			m_xmOOBB = BoundingOrientedBox();
 
 private:
 	int m_nReferences = 1;
 	
-	// raw ë°ì´í„° (ì •ì , ì¸ë±ìŠ¤)
+	// raw µ¥ÀÌÅÍ (Á¤Á¡, ÀÎµ¦½º)
 	std::vector<CVertex>	m_Vertices;
 	std::vector<uint32_t>	m_Indices;
 
-	// í‰ë©´ ë°ì´í„° (ì¸ë±ìŠ¤ ìœ„ì¹˜, ë…¸ë©€)
+	// Æò¸é µ¥ÀÌÅÍ (ÀÎµ¦½º À§Ä¡, ³ë¸Ö)
 	std::vector<CTriangle>	m_Triangles;
 
-	// ìµœì¢…ì ìœ¼ë¡œ ê·¸ë ¤ë‚¼ ì •ì  ëª¨ì„
+	// ÃÖÁ¾ÀûÀ¸·Î ±×·Á³¾ Á¤Á¡ ¸ğÀÓ
 	size_t m_nDrawingPoints = 0;
 	std::vector<POINT> m_vDrawingPoints;
 };

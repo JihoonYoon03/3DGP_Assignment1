@@ -1,4 +1,4 @@
-ï»¿#include "framework.h"
+#include "framework.h"
 #include "GameFramework.h"
 
 void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
@@ -6,10 +6,10 @@ void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	m_hInstance = hInstance;
 	m_hWnd = hMainWnd;
 	
-	// ë Œë”ë§ í™”ë©´ì„ ìƒì„±í•œë‹¤.
+	// ·»´õ¸µ È­¸éÀ» »ý¼ºÇÑ´Ù.
 	BuildFrameBuffer();
 	
-	// í”Œë ˆì´ì–´ì™€ ê²Œìž„ ì„¸ê³„(ì”¬)ì„ ìƒì„±í•œë‹¤.
+	// ÇÃ·¹ÀÌ¾î¿Í °ÔÀÓ ¼¼°è(¾À)À» »ý¼ºÇÑ´Ù.
 	BuildObjects();
 
 	m_pszFrameRate = L"LabProject (";
@@ -78,6 +78,8 @@ void CGameFramework::BuildObjects()
 	pCamera->GeneratePerspectiveProjectionMatrix(1.01f, 500.0f, 60.0f);
 	pCamera->SetFOVAngle(60.0f);
 
+	pCamera->GenerateOrthographicProjectionMatrix(1.01f, 50.0f, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+
 	CAirplaneMesh* pAirplaneMesh = new CAirplaneMesh(6.0f, 6.0f, 1.0f);
 
 	m_pPlayer = new CAirplanePlayer();
@@ -92,7 +94,7 @@ void CGameFramework::BuildObjects()
 }
 void CGameFramework::ReleaseObjects()
 {
-	// ì”¬ ê°ì²´ì˜ ê²Œìž„ ê°ì²´ë“¤ì„ ì†Œë©¸í•˜ê³ , ì”¬ ê°ì²´ì™€ í”Œë ˆì´ì–´ ê°ì²´ë¥¼ ì†Œë©¸í•œë‹¤.
+	// ¾À °´Ã¼ÀÇ °ÔÀÓ °´Ã¼µéÀ» ¼Ò¸êÇÏ°í, ¾À °´Ã¼¿Í ÇÃ·¹ÀÌ¾î °´Ã¼¸¦ ¼Ò¸êÇÑ´Ù.
 	if (m_pScene) {
 		m_pScene->ReleaseObjects();
 		delete m_pScene;
@@ -231,7 +233,7 @@ void CGameFramework::FrameAdvance()
 	CCamera* pCamera = m_pPlayer->GetCamera();
 	if (m_pScene) m_pScene->Render(m_hDCFrameBuffer, pCamera);
 
-	if (m_pPlayer) m_pPlayer->Render(m_hDCFrameBuffer, pCamera);
+	//if (m_pPlayer) m_pPlayer->Render(m_hDCFrameBuffer, pCamera);
 
 	PresentFrameBuffer();
 
