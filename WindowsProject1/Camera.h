@@ -1,4 +1,4 @@
-ï»¿#pragma once
+#pragma once
 
 //#include "Mesh.h"
 
@@ -28,7 +28,7 @@ public:
 	void GeneratePerspectiveProjectionMatrix(float fNearPlaneDistance, float fFarPlaneDistance, float fFOVAngle);
 	void GenerateOrthographicProjectionMatrix(float fNearPlaneDistance, float fFarPlaneDistance, float fWidth, float hHeight);
 
-	// ì¹´ë©”ë¼ì˜ ë·°í¬íŠ¸ì™€ ì‹œì•¼ê°ì„ ì„¤ì •í•œë‹¤.
+	// Ä«¸Ş¶óÀÇ ºäÆ÷Æ®¿Í ½Ã¾ß°¢À» ¼³Á¤ÇÑ´Ù.
 	void SetViewport(int xTopLeft, int yTopLeft, int nWidth, int nHeight);
 	void SetFOVAngle(float fFOVAngle);
 
@@ -40,32 +40,40 @@ public:
 	const XMFLOAT4X4& GetViewMatrix() const { return m_xmf4x4View; }
 	const XMFLOAT4X4& GetPerspectiveProjectMatrix() const { return m_xmf4x4PerspectiveProject; }
 
-	// ì¹´ë©”ë¼ë¥¼ ì´ë™í•˜ê³  íšŒì „í•œë‹¤.
+	// Ä«¸Ş¶ó¸¦ ÀÌµ¿ÇÏ°í È¸ÀüÇÑ´Ù.
 	void Move(const XMFLOAT3& xmf3Shift);
 	void Move(float x, float y, float z);
 	void Rotate(float fPitch = 0.f, float fYaw = 0.f, float fRoll = 0.f);
 	void Update(CPlayer* pPlayer, XMFLOAT3& xmf3LookAt, float fTimeElapsed = 0.016f);
 
+	bool IsInFrustum(BoundingOrientedBox& xmBoundingBox);
+
 	XMFLOAT4X4	m_xmf4x4View = Matrix4x4::Identity();
 	XMFLOAT4X4	m_xmf4x4PerspectiveProject = Matrix4x4::Identity();
 	XMFLOAT4X4	m_xmf4x4ViewPerspectiveProject = Matrix4x4::Identity();
 
+	XMFLOAT4X4	m_xmf4x4OrthographicProject = Matrix4x4::Identity();
+	XMFLOAT4X4	m_xmf4x4ViewOrthographicProject = Matrix4x4::Identity();
+
 	CViewport	m_Viewport;
 
 private:
-	// ìœ„ì¹˜, ê¸°ì €ë²¡í„°
+	// À§Ä¡, ±âÀúº¤ÅÍ
 	XMFLOAT3	m_xmf3Position = XMFLOAT3(0.f, 0.f, 0.f);
 	XMFLOAT3	m_xmf3Right = XMFLOAT3(1.f, 0.f, 0.f);
 	XMFLOAT3	m_xmf3Up	= XMFLOAT3(0.f, 1.f, 0.f);
 	XMFLOAT3	m_xmf3Look	= XMFLOAT3(0.f, 0.f, 1.f);
 
-	// ì¹´ë©”ë¼ì˜ ì‹œì•¼ê°, íˆ¬ì˜ ì‚¬ê°í˜•ê¹Œì§€ì˜ ê±°ë¦¬
+	// Ä«¸Ş¶óÀÇ ½Ã¾ß°¢, Åõ¿µ »ç°¢Çü±îÁöÀÇ °Å¸®
 	float m_fFOVAngle = 90.0f;
 	float m_fProjectRectDistance = 1.0f;
 
-	// ë·°í¬íŠ¸
+	// ½Ã¾ß ÀıµÎÃ¼, ºä ¿ªÇà·Ä
+	BoundingFrustum				m_xmFrustumView = BoundingFrustum();
+	BoundingFrustum				m_xmFrustumWorld = BoundingFrustum();
+	XMFLOAT4X4					m_xmf4x4InverseView = Matrix4x4::Identity();
 
-	// ì¢…íš¡ë¹„
+	// Á¾È¾ºñ
 	float m_fAspectRatio = FRAMEBUFFER_WIDTH / FRAMEBUFFER_HEIGHT;
 };
 

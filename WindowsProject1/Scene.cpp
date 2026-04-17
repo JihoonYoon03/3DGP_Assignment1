@@ -122,6 +122,7 @@ void CScene::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 
 	XMFLOAT4X4 viewMatrix = pCamera->GetViewMatrix();
 
+	// 거리 기준 렌더링 순서 정렬
 	std::sort(m_vObjects.begin(), m_vObjects.end(),
 		[&viewMatrix](const CGameObject* a, const CGameObject* b) {
 			float aZ = Vector3::TransformCoord(XMFLOAT3{}, Matrix4x4::Multiply(a->GetWorldMatrix(), viewMatrix)).z;

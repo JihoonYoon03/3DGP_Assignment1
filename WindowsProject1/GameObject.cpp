@@ -73,13 +73,34 @@ void CGameObject::Animate(float fElapsedTime)
 {
 	if (m_fRotationSpeed != 0.0f) Rotate(m_xmf3RotationAxis, m_fRotationSpeed * fElapsedTime);
 	if (m_fMovingSpeed != 0.0f) Move(m_xmf3MovingDirection, m_fMovingSpeed * fElapsedTime);
+
+	UpdateBoundingBox();
 }
 
+void CGameObject::UpdateBoundingBox()
+{
+	if (m_pMesh) {
+		m_pMesh->m_xmOOBB.Transform(m_xmOOBB, XMLoadFloat4x4(&m_xmf4x4World));
+		XMStoreFloat4(&m_xmOOBB.Orientation, XMQuaternionNormalize(XMLoadFloat4(&m_xmOOBB.Orientation)));
+	}
+}
+
+// render with frustum culling
 void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+{
+	if (pCamera->IsInFrustum(m_xmOOBB)) {
+		CGameObject::Render(hDCFrameBuffer, pCamera, m_pMesh);
+	}
+	else {
+		OutputDebugStringW(L"Frustum Culling called!\n");
+	}
+}
+
+void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, CMesh* pMesh)
 {
 	if (m_pMesh) {
 		CGraphicsPipeline::SetWorldTransform(&m_xmf4x4World);
-
+		
 		XMMATRIX mtxWorldInv = XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_xmf4x4World));
 		XMVECTOR vLocalCameraPos = XMVector3TransformCoord(XMLoadFloat3(&pCamera->GetPosition()), mtxWorldInv);
 

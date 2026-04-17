@@ -47,6 +47,8 @@ public:
 
 	void AddRef() { m_nReferences++; }
 	void Release();
+	
+	BoundingOrientedBox			m_xmOOBB = BoundingOrientedBox();
 
 private:
 	int m_nReferences = 1;

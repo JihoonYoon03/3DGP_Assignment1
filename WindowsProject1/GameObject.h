@@ -33,8 +33,11 @@ public:
 
 	virtual void OnUpdateTransform() { }
 	
+	void UpdateBoundingBox();
+
 	virtual void Animate(float fElapsedTime);
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, CMesh* pMesh);
 
 protected:
 	bool						m_bActive = true;
@@ -49,10 +52,13 @@ protected:
 	float						m_fRotationSpeed = 0.0f;
 
 	// 모양(메쉬/모델)
-	CMesh* m_pMesh = nullptr;
+	CMesh*						m_pMesh = nullptr;
+
+	BoundingOrientedBox			m_xmOOBB = BoundingOrientedBox();
+	CGameObject*				m_pObjectCollided = nullptr;
 
 	// 게임 객체의 색상이다.
-	DWORD	m_dwColor = RGB(255, 0, 0);
+	DWORD						m_dwColor = RGB(255, 0, 0);
 
 	HPEN hPen = NULL;
 	HBRUSH hBrush = NULL;
