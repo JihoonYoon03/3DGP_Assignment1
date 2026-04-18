@@ -13,9 +13,11 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <format>
 #include <ranges>
 #include <algorithm>
+#include <random>
 
 // 간단한 사운드 출력, 시스템 시간 확인용 (Multimedia system)
 #include <Mmsystem.h>
@@ -47,7 +49,12 @@ constexpr int FRAMEBUFFER_HEIGHT	= 480;
 
 #define EPSILON					1.0e-6f
 
+#define EXPLOSION_DEBRISES		240
+
 //#define WIREFRAME_MODE
+
+// 실제 변수는 GameFramework.cpp에 있음
+extern std::mt19937 rde;
 
 inline bool IsZero(float fValue) { return((fabsf(fValue) < EPSILON)); }
 inline bool IsEqual(float fA, float fB) { return(::IsZero(fA - fB)); }

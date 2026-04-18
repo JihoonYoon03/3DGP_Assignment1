@@ -1,15 +1,18 @@
-#include "framework.h"
+ï»¿#include "framework.h"
 #include "GameFramework.h"
+
+std::random_device rd;
+std::mt19937 rde(rd());
 
 void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 {
 	m_hInstance = hInstance;
 	m_hWnd = hMainWnd;
 	
-	// ·»´õ¸µ È­¸éÀ» »ý¼ºÇÑ´Ù.
+	// ë Œë”ë§ í™”ë©´ì„ ìƒì„±í•œë‹¤.
 	BuildFrameBuffer();
 	
-	// ÇÃ·¹ÀÌ¾î¿Í °ÔÀÓ ¼¼°è(¾À)À» »ý¼ºÇÑ´Ù.
+	// í”Œë ˆì´ì–´ì™€ ê²Œìž„ ì„¸ê³„(ì”¬)ì„ ìƒì„±í•œë‹¤.
 	BuildObjects();
 
 	m_pszFrameRate = L"LabProject (";
@@ -94,7 +97,7 @@ void CGameFramework::BuildObjects()
 }
 void CGameFramework::ReleaseObjects()
 {
-	// ¾À °´Ã¼ÀÇ °ÔÀÓ °´Ã¼µéÀ» ¼Ò¸êÇÏ°í, ¾À °´Ã¼¿Í ÇÃ·¹ÀÌ¾î °´Ã¼¸¦ ¼Ò¸êÇÑ´Ù.
+	// ì”¬ ê°ì²´ì˜ ê²Œìž„ ê°ì²´ë“¤ì„ ì†Œë©¸í•˜ê³ , ì”¬ ê°ì²´ì™€ í”Œë ˆì´ì–´ ê°ì²´ë¥¼ ì†Œë©¸í•œë‹¤.
 	if (m_pScene) {
 		m_pScene->ReleaseObjects();
 		delete m_pScene;
@@ -105,12 +108,19 @@ void CGameFramework::ReleaseObjects()
 
 void CGameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
+	if (m_pScene) m_pScene->OnProcessingMouseMessage(hWnd, nMessageID, wParam, lParam);
+
 	switch (nMessageID)
 	{
 	case WM_RBUTTONDOWN:
 	case WM_LBUTTONDOWN:
 		::SetCapture(hWnd);
 		::GetCursorPos(&m_ptOldCursorPos);
+		if (nMessageID == WM_LBUTTONDOWN) {
+			m_pScene->FireBullet(m_pLockedObject);
+			m_pLockedObject = nullptr;
+		}
+		//if (nMessageID == WM_RBUTTONDOWN) m_pLockedObject = m_pScene->PickObjectPointedByCursor(LOWORD(lParam), HIWORD(lParam), m_pPlayer->m_pCamera);
 		break;
 	case WM_LBUTTONUP:
 	case WM_RBUTTONUP:
@@ -119,13 +129,14 @@ void CGameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM
 	case WM_MOUSEMOVE:
 		break;
 	default:
-		if (m_pScene) m_pScene->OnProcessingMouseMessage(hWnd, nMessageID, wParam, lParam);
 		break;
 	}
 }
 
 void CGameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
+	if (m_pScene) m_pScene->OnProcessingKeyboardMessage(hWnd, nMessageID, wParam, lParam);
+
 	switch (nMessageID)
 	{
 	case WM_KEYDOWN:
@@ -183,12 +194,12 @@ void CGameFramework::ProcessInput()
 	if (GetKeyboardState(pKeyBuffer))
 	{
 		DWORD dwDirection = 0;
-		if (pKeyBuffer[VK_UP] & 0xF0) dwDirection |= DIR_FORWARD;
-		if (pKeyBuffer[VK_DOWN] & 0xF0) dwDirection |= DIR_BACKWARD;
-		if (pKeyBuffer[VK_LEFT] & 0xF0) dwDirection |= DIR_LEFT;
-		if (pKeyBuffer[VK_RIGHT] & 0xF0) dwDirection |= DIR_RIGHT;
-		if (pKeyBuffer[VK_PRIOR] & 0xF0) dwDirection |= DIR_UP;
-		if (pKeyBuffer[VK_NEXT] & 0xF0) dwDirection |= DIR_DOWN;
+		if (pKeyBuffer['W'] & 0xF0) dwDirection |= DIR_FORWARD;
+		if (pKeyBuffer['S'] & 0xF0) dwDirection |= DIR_BACKWARD;
+		if (pKeyBuffer['A'] & 0xF0) dwDirection |= DIR_LEFT;
+		if (pKeyBuffer['D'] & 0xF0) dwDirection |= DIR_RIGHT;
+		if (pKeyBuffer[VK_SPACE] & 0xF0) dwDirection |= DIR_UP;
+		if (pKeyBuffer[VK_CONTROL] & 0xF0) dwDirection |= DIR_DOWN;
 
 		if (dwDirection) m_pPlayer->Move(dwDirection, 0.15f);
 	}

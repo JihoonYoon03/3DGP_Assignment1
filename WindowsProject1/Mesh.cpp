@@ -1,4 +1,4 @@
-#include "framework.h"
+ï»¿#include "framework.h"
 #include "Mesh.h"
 #include "GraphicsPipeline.h"
 #include "Camera.h"
@@ -46,21 +46,19 @@ void CMesh::Release()
 //	}
 //}
 
-void CMesh::SetMesh(std::vector<CVertex>&& vertices, std::vector<uint32_t>&& indices)
+void CMesh::SetMesh(std::vector<CVertex>& vertices, std::vector<uint32_t>& indices)
 {
 	m_Vertices = std::move(vertices);
 	m_Indices = std::move(indices);
 
-	// »ï°¢Çü °è»ê
-	// 3°³ ´ÜÀ§ÀÇ ÀÎµ¦½º°¡ ¾Æ´Ñ °æ¿ì ¿¹¿ÜÃ³¸®
+	// ì‚¼ê°í˜• ê³„ì‚°
+	// 3ê°œ ë‹¨ìœ„ì˜ ì¸ë±ìŠ¤ê°€ ì•„ë‹Œ ê²½ìš° ì˜ˆì™¸ì²˜ë¦¬
 	if (m_Indices.size() % 3 != 0) {
 		std::wstring buf = std::format(L"Mesh Data Error :: Vertices {} / Indices {}\n", m_Vertices.size(), m_Indices.size());
 		OutputDebugStringW(buf.c_str());
 		return;
 	}
-
 	else {
-
 		m_Triangles.reserve(m_Indices.size() / 3);
 
 		for (size_t i = 0; i < m_Indices.size(); i += 3) {
@@ -79,7 +77,7 @@ void CMesh::SetMesh(std::vector<CVertex>&& vertices, std::vector<uint32_t>&& ind
 
 void Draw2DLine(HDC hDCFrameBuffer, XMFLOAT3& f3PrevProject, XMFLOAT3& f3CurProject)
 {
-	// Åõ¿µ ÁÂÇ¥°è 2Á¡À» È­¸é ÁÂÇ¥°è·Î º¯È¯, ±× Á¡À» ¼±ºĞÀ¸·Î ±×¸²
+	// íˆ¬ì˜ ì¢Œí‘œê³„ 2ì ì„ í™”ë©´ ì¢Œí‘œê³„ë¡œ ë³€í™˜, ê·¸ ì ì„ ì„ ë¶„ìœ¼ë¡œ ê·¸ë¦¼
 	XMFLOAT3 f3Prev = CGraphicsPipeline::ScreenTransform(f3PrevProject);
 	XMFLOAT3 f3Cur = CGraphicsPipeline::ScreenTransform(f3CurProject);
 
@@ -92,22 +90,22 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 	XMFLOAT3 f3InitProject, f3PrevProject, f3Intersect;
 	bool bPrevInside = false, bInitInside = false, bCurInside = false, bIntersectInside = false;
 
-	// Ãâ·ÂÇÒ »ï°¢Çüµé¸¸ ÀúÀåÇÏ´Â ¸®½ºÆ®
+	// ì¶œë ¥í•  ì‚¼ê°í˜•ë“¤ë§Œ ì €ì¥í•˜ëŠ” ë¦¬ìŠ¤íŠ¸
 	std::vector<CTriangle*> renderList;
 
 #ifndef WIREFRAME_MODE
 
-	// ¸ğµç ´Ù°¢Çü ·»´õ¸µ
+	// ëª¨ë“  ë‹¤ê°í˜• ë Œë”ë§
 	for (auto& triangle : m_Triangles) {
 
-		// Àº¸éÁ¦°Å
-		// ¸Å½¬ ·ÎÄÃ ÁÂÇ¥°è¿¡¼­ Æò¸é ³ë¸Ö°ú Ä«¸Ş¶ó lookÀÇ ³»Àû ¼öÇà
+		// ì€ë©´ì œê±°
+		// ë§¤ì‰¬ ë¡œì»¬ ì¢Œí‘œê³„ì—ì„œ í‰ë©´ ë…¸ë©€ê³¼ ì¹´ë©”ë¼ lookì˜ ë‚´ì  ìˆ˜í–‰
 		XMVECTOR normal = XMLoadFloat3(&triangle.m_Normal);
 		XMVECTOR look = XMVectorSubtract(XMLoadFloat3(&m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position), LocalCameraPos);
 
 		if (XMVectorGetX(XMVector3Dot(normal, look)) > 0.f) continue;
 
-		// Ä«¸Ş¶ó ÁÂÇ¥°è·Î ¸ÕÀú º¯È¯
+		// ì¹´ë©”ë¼ ì¢Œí‘œê³„ë¡œ ë¨¼ì € ë³€í™˜
 		XMFLOAT4X4 viewMatrix = camera->GetViewMatrix();
 
 		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::WorldViewTransform(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position, viewMatrix);
@@ -116,24 +114,24 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 
 		triangle.m_averageZ = (f3CurProject1.z + f3CurProject2.z + f3CurProject3.z) / 3;
 
-		// Ä«¸Ş¶ó µÚ¿¡ ÀÖ´Ù¸é ÄÃ¸µ
-		if (f3CurProject1.z < 0.f || f3CurProject2.z < 0.f || f3CurProject3.z < 0.f) {
-			OutputDebugStringW(std::wstring{ L"µÚ·Î ³Ñ¾î°¨ Ã¼Å·\n" }.c_str());
+		// ì¹´ë©”ë¼ ë’¤ì— ìˆë‹¤ë©´ ì»¬ë§
+		/*if (f3CurProject1.z < 0.f || f3CurProject2.z < 0.f || f3CurProject3.z < 0.f) {
+			OutputDebugStringW(std::wstring{ L"ì¹´ë©”ë¼ ë’¤ë¡œ ë„˜ì–´ê° ì²´í‚¹\n" }.c_str());
 			continue;
-		}
+		}*/
 
-		// ·»´õ ´ë»ó ¸®½ºÆ®¿¡ ÇØ´ç »ï°¢Çü ÀúÀå
+		// ë Œë” ëŒ€ìƒ ë¦¬ìŠ¤íŠ¸ì— í•´ë‹¹ ì‚¼ê°í˜• ì €ì¥
 		renderList.push_back(&triangle);
 	}
 
-	// zÁÂÇ¥ ±âÁØ ³»¸²Â÷¼ø Á¤·Ä, ¸Õ °ÍºÎÅÍ ·»´õ¸µ
+	// zì¢Œí‘œ ê¸°ì¤€ ë‚´ë¦¼ì°¨ìˆœ ì •ë ¬, ë¨¼ ê²ƒë¶€í„° ë Œë”ë§
 	std::sort(renderList.begin(), renderList.end(), [](const CTriangle* a, const CTriangle* b) {
 		return a->m_averageZ > b->m_averageZ;
 		});
 
 	for (const auto* triangle : renderList)	{
 
-		// ¸ğµç Á¤Á¡ ¿ø±Ù Åõ¿µ º¯È¯ ¹× ·»´õ¸µ
+		// ëª¨ë“  ì •ì  ì›ê·¼ íˆ¬ì˜ ë³€í™˜ ë° ë Œë”ë§
 		XMFLOAT4X4 PerspectiveProject = camera->GetPerspectiveProjectMatrix();
 
 		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle->m_StartIndex]].m_xmf3Position);
@@ -154,11 +152,11 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 	}
 
 #else
-	// ¸ğµç ´Ù°¢Çü ·»´õ¸µ
+	// ëª¨ë“  ë‹¤ê°í˜• ë Œë”ë§
 	for (const auto& triangle : m_Triangles) {
 		
-		// Àº¸éÁ¦°Å
-		// ¸Å½¬ ·ÎÄÃ ÁÂÇ¥°è¿¡¼­ Æò¸é ³ë¸Ö°ú Ä«¸Ş¶ó lookÀÇ ³»Àû ¼öÇà
+		// ì€ë©´ì œê±°
+		// ë§¤ì‰¬ ë¡œì»¬ ì¢Œí‘œê³„ì—ì„œ í‰ë©´ ë…¸ë©€ê³¼ ì¹´ë©”ë¼ lookì˜ ë‚´ì  ìˆ˜í–‰
 		XMVECTOR normal = XMLoadFloat3(&triangle.m_Normal);
 		XMVECTOR look = XMVectorSubtract(XMLoadFloat3(&m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position), LocalCameraPos);
 
@@ -185,44 +183,46 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 #endif
 }
 
+// ========================================================
 CCubeMesh::CCubeMesh(float fWidth, float fHeight, float fDepth)
+// ========================================================
 {
 	float fHalfWidth = fWidth * 0.5f;
 	float fHalfHeight = fHeight * 0.5f;
 	float fHalfDepth = fDepth * 0.5f;
 
 	std::vector<CVertex> vertices = {
-		// ¾Õ
+		// ì•
 		{ -fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, -fHalfDepth },
 		{ -fHalfWidth, -fHalfHeight, -fHalfDepth },
 
-		// À§
+		// ìœ„
 		{ -fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ -fHalfWidth, +fHalfHeight, -fHalfDepth },
 
-		// µÚ
+		// ë’¤
 		{ -fHalfWidth, -fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ -fHalfWidth, +fHalfHeight, +fHalfDepth },
 
-		// ¹Ù´Ú
+		// ë°”ë‹¥
 		{ -fHalfWidth, -fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, +fHalfDepth },
 		{ -fHalfWidth, -fHalfHeight, +fHalfDepth },
 
-		// ÁÂ
+		// ì¢Œ
 		{ -fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ -fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ -fHalfWidth, -fHalfHeight, -fHalfDepth },
 		{ -fHalfWidth, -fHalfHeight, +fHalfDepth },
 
-		// ¿ì
+		// ìš°
 		{ +fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, +fHalfDepth },
@@ -230,26 +230,26 @@ CCubeMesh::CCubeMesh(float fWidth, float fHeight, float fDepth)
 	};
 
 	std::vector<uint32_t> indices = {
-		// ¾Õ
+		// ì•
 		0, 1, 2, 0, 2, 3,
 
-		// À§
+		// ìœ„
 		4, 5, 6, 4, 6, 7,
 
-		// µÚ
+		// ë’¤
 		8, 9, 10, 8, 10, 11,
 
-		// ¹Ù´Ú
+		// ë°”ë‹¥
 		12, 13, 14, 12, 14, 15,
 
-		// ÁÂ
+		// ì¢Œ
 		16, 17, 18, 16, 18, 19,
 
-		// ¿ì
+		// ìš°
 		20, 21, 22, 20, 22, 23
 	};
 
-	SetMesh(std::move(vertices), std::move(indices));
+	SetMesh(vertices, indices);
 	m_xmOOBB = BoundingOrientedBox(XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(fHalfWidth, fHalfHeight, fHalfDepth), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
@@ -258,6 +258,102 @@ CCubeMesh::~CCubeMesh()
 
 }
 
+// ========================================================
+CWallMesh::CWallMesh(float fWidth, float fHeight, float fDepth, int nSubRects)
+// ========================================================
+{
+	float fHalfWidth = fWidth * 0.5f;
+	float fHalfHeight = fHeight * 0.5f;
+	float fHalfDepth = fDepth * 0.5f;
+	float fCellWidth = fWidth * (1.0f / nSubRects);
+	float fCellHeight = fHeight * (1.0f / nSubRects);
+	float fCellDepth = fDepth * (1.0f / nSubRects);
+
+	std::vector<CVertex> vertices;
+	std::vector<uint32_t> indices;
+
+	// ì´ ì‚¬ê°í˜• ê°œìˆ˜ = (ì™¼ìª½, ì˜¤ë¥¸ìª½, ìœ„, ì•„ë˜) + (ì•, ë’¤)
+	int nTotalQuads = (4 * nSubRects * nSubRects) + 2;
+	vertices.reserve(nTotalQuads * 4);
+	indices.reserve(nTotalQuads * 6);
+
+	// ì‚¬ê°í˜•ì„ 2ê°œì˜ ì‚¼ê°í˜• ë‹¨ìœ„ë¡œ ë‚˜ëˆ„ì–´ ì¸ë±ìŠ¤ì™€ ì •ì ì„ ì¶”ê°€
+	auto AddQuad = [&](const CVertex& v0, const CVertex& v1, const CVertex& v2, const CVertex& v3) {
+		uint32_t startIndex = static_cast<uint32_t>(vertices.size());
+		vertices.push_back(v0);
+		vertices.push_back(v1);
+		vertices.push_back(v2);
+		vertices.push_back(v3);
+
+		// ì‚¼ê°í˜• 1 (0, 1, 2)
+		indices.push_back(startIndex + 0);
+		indices.push_back(startIndex + 1);
+		indices.push_back(startIndex + 2);
+
+		// ì‚¼ê°í˜• 2 (0, 2, 3)
+		indices.push_back(startIndex + 0);
+		indices.push_back(startIndex + 2);
+		indices.push_back(startIndex + 3);
+		};
+
+	for (int i = 0; i < nSubRects; i++)
+	{
+		for (int j = 0; j < nSubRects; j++)
+		{
+			// Left Face
+			AddQuad(
+				CVertex(-fHalfWidth, -fHalfHeight + (i * fCellHeight), -fHalfDepth + (j * fCellDepth)),
+				CVertex(-fHalfWidth, -fHalfHeight + ((i + 1) * fCellHeight), -fHalfDepth + (j * fCellDepth)),
+				CVertex(-fHalfWidth, -fHalfHeight + ((i + 1) * fCellHeight), -fHalfDepth + ((j + 1) * fCellDepth)),
+				CVertex(-fHalfWidth, -fHalfHeight + (i * fCellHeight), -fHalfDepth + ((j + 1) * fCellDepth))
+			);
+
+			// Right Face
+			AddQuad(
+				CVertex(+fHalfWidth, -fHalfHeight + (i * fCellHeight), -fHalfDepth + (j * fCellDepth)),
+				CVertex(+fHalfWidth, -fHalfHeight + ((i + 1) * fCellHeight), -fHalfDepth + (j * fCellDepth)),
+				CVertex(+fHalfWidth, -fHalfHeight + ((i + 1) * fCellHeight), -fHalfDepth + ((j + 1) * fCellDepth)),
+				CVertex(+fHalfWidth, -fHalfHeight + (i * fCellHeight), -fHalfDepth + ((j + 1) * fCellDepth))
+			);
+
+			// Top Face
+			AddQuad(
+				CVertex(-fHalfWidth + (i * fCellWidth), +fHalfHeight, -fHalfDepth + (j * fCellDepth)),
+				CVertex(-fHalfWidth + ((i + 1) * fCellWidth), +fHalfHeight, -fHalfDepth + (j * fCellDepth)),
+				CVertex(-fHalfWidth + ((i + 1) * fCellWidth), +fHalfHeight, -fHalfDepth + ((j + 1) * fCellDepth)),
+				CVertex(-fHalfWidth + (i * fCellWidth), +fHalfHeight, -fHalfDepth + ((j + 1) * fCellDepth))
+			);
+
+			// Bottom Face
+			AddQuad(
+				CVertex(-fHalfWidth + (i * fCellWidth), -fHalfHeight, -fHalfDepth + (j * fCellDepth)),
+				CVertex(-fHalfWidth + ((i + 1) * fCellWidth), -fHalfHeight, -fHalfDepth + (j * fCellDepth)),
+				CVertex(-fHalfWidth + ((i + 1) * fCellWidth), -fHalfHeight, -fHalfDepth + ((j + 1) * fCellDepth)),
+				CVertex(-fHalfWidth + (i * fCellWidth), -fHalfHeight, -fHalfDepth + ((j + 1) * fCellDepth))
+			);
+		}
+	}
+
+	// Front Face
+	AddQuad(
+		CVertex(-fHalfWidth, +fHalfHeight, -fHalfDepth),
+		CVertex(+fHalfWidth, +fHalfHeight, -fHalfDepth),
+		CVertex(+fHalfWidth, -fHalfHeight, -fHalfDepth),
+		CVertex(-fHalfWidth, -fHalfHeight, -fHalfDepth)
+	);
+
+	// Back Face
+	AddQuad(
+		CVertex(-fHalfWidth, -fHalfHeight, +fHalfDepth),
+		CVertex(+fHalfWidth, -fHalfHeight, +fHalfDepth),
+		CVertex(+fHalfWidth, +fHalfHeight, +fHalfDepth),
+		CVertex(-fHalfWidth, +fHalfHeight, +fHalfDepth)
+	);
+
+	SetMesh(vertices, indices);
+
+	m_xmOOBB = BoundingOrientedBox(XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(fHalfWidth, fHalfHeight, fHalfDepth), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+}
 
 // ========================================================
 CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth)
@@ -268,9 +364,9 @@ CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth)
 	float x1 = fx * 0.2f, y1 = fy * 0.2f, x2 = fx * 0.1f, y3 = fy * 0.3f, y2 = ((y1 - (fy - y3)) / x1) * x2 + (fy - y3);
 	int i = 0;
 
-	// ÃÑ 16°³ÀÇ °íÀ¯ Á¤Á¡ ¹è¿­ Á¤ÀÇ
+	// ì´ 16ê°œì˜ ê³ ìœ  ì •ì  ë°°ì—´ ì •ì˜
 	std::vector<CVertex> vertices = {
-		// ¾Õ¸é (-fz) : ÀÎµ¦½º 0 ~ 7
+		// ì•ë©´ (-fz) : ì¸ë±ìŠ¤ 0 ~ 7
 		{  0.0f, +(fy + y3), -fz }, // 0
 		{  0.0f, 0.0f,       -fz }, // 1
 		{   +x1, -y1,        -fz }, // 2
@@ -280,7 +376,7 @@ CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth)
 		{   -x2, +y2,        -fz }, // 6
 		{   -fx, -y3,        -fz }, // 7
 
-		// µŞ¸é (+fz) : ÀÎµ¦½º 8 ~ 15
+		// ë’·ë©´ (+fz) : ì¸ë±ìŠ¤ 8 ~ 15
 		{  0.0f, +(fy + y3), +fz }, // 8
 		{  0.0f, 0.0f,       +fz }, // 9
 		{   +x1, -y1,        +fz }, // 10
@@ -329,159 +425,9 @@ CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth)
 		3, 15, 7
 	};
 
-	SetMesh(std::move(vertices), std::move(indices));
+	SetMesh(vertices, indices);
 	
 	m_xmOOBB = BoundingOrientedBox(XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(fx, fy, fz), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-
-	//// Upper Plane
-	//CTriangle* pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), -fz));
-	//pFace->SetVertex(1, CVertex(+x1, -y1, -fz));
-	//pFace->SetVertex(2, CVertex(0.0f, 0.0f, -fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), -fz));
-	//pFace->SetVertex(1, CVertex(0.0f, 0.0f, -fz));
-	//pFace->SetVertex(2, CVertex(-x1, -y1, -fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(+x2, +y2, -fz));
-	//pFace->SetVertex(1, CVertex(+fx, -y3, -fz));
-	//pFace->SetVertex(2, CVertex(+x1, -y1, -fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(-x2, +y2, -fz));
-	//pFace->SetVertex(1, CVertex(-x1, -y1, -fz));
-	//pFace->SetVertex(2, CVertex(-fx, -y3, -fz));
-	//SetMesh(i++, pFace);
-
-	////Lower Plane
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), +fz));
-	//pFace->SetVertex(1, CVertex(0.0f, 0.0f, +fz));
-	//pFace->SetVertex(2, CVertex(+x1, -y1, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), +fz));
-	//pFace->SetVertex(1, CVertex(-x1, -y1, +fz));
-	//pFace->SetVertex(2, CVertex(0.0f, 0.0f, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(+x2, +y2, +fz));
-	//pFace->SetVertex(1, CVertex(+x1, -y1, +fz));
-	//pFace->SetVertex(2, CVertex(+fx, -y3, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(-x2, +y2, +fz));
-	//pFace->SetVertex(1, CVertex(-fx, -y3, +fz));
-	//pFace->SetVertex(2, CVertex(-x1, -y1, +fz));
-	//SetMesh(i++, pFace);
-
-	////Right Plane
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), -fz));
-	//pFace->SetVertex(1, CVertex(0.0f, +(fy + y3), +fz));
-	//pFace->SetVertex(2, CVertex(+x2, +y2, -fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(+x2, +y2, -fz));
-	//pFace->SetVertex(1, CVertex(0.0f, +(fy + y3), +fz));
-	//pFace->SetVertex(2, CVertex(+x2, +y2, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(+x2, +y2, -fz));
-	//pFace->SetVertex(1, CVertex(+x2, +y2, +fz));
-	//pFace->SetVertex(2, CVertex(+fx, -y3, -fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(+fx, -y3, -fz));
-	//pFace->SetVertex(1, CVertex(+x2, +y2, +fz));
-	//pFace->SetVertex(2, CVertex(+fx, -y3, +fz));
-	//SetMesh(i++, pFace);
-
-	////Back/Right Plane
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(+x1, -y1, -fz));
-	//pFace->SetVertex(1, CVertex(+fx, -y3, -fz));
-	//pFace->SetVertex(2, CVertex(+fx, -y3, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(+x1, -y1, -fz));
-	//pFace->SetVertex(1, CVertex(+fx, -y3, +fz));
-	//pFace->SetVertex(2, CVertex(+x1, -y1, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, 0.0f, -fz));
-	//pFace->SetVertex(1, CVertex(+x1, -y1, -fz));
-	//pFace->SetVertex(2, CVertex(+x1, -y1, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, 0.0f, -fz));
-	//pFace->SetVertex(1, CVertex(+x1, -y1, +fz));
-	//pFace->SetVertex(2, CVertex(0.0f, 0.0f, +fz));
-	//SetMesh(i++, pFace);
-
-	////Left Plane
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), +fz));
-	//pFace->SetVertex(1, CVertex(0.0f, +(fy + y3), -fz));
-	//pFace->SetVertex(2, CVertex(-x2, +y2, -fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, +(fy + y3), +fz));
-	//pFace->SetVertex(1, CVertex(-x2, +y2, -fz));
-	//pFace->SetVertex(2, CVertex(-x2, +y2, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(-x2, +y2, +fz));
-	//pFace->SetVertex(1, CVertex(-x2, +y2, -fz));
-	//pFace->SetVertex(2, CVertex(-fx, -y3, -fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(-x2, +y2, +fz));
-	//pFace->SetVertex(1, CVertex(-fx, -y3, -fz));
-	//pFace->SetVertex(2, CVertex(-fx, -y3, +fz));
-	//SetMesh(i++, pFace);
-
-	////Back/Left Plane
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, 0.0f, -fz));
-	//pFace->SetVertex(1, CVertex(0.0f, 0.0f, +fz));
-	//pFace->SetVertex(2, CVertex(-x1, -y1, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(0.0f, 0.0f, -fz));
-	//pFace->SetVertex(1, CVertex(-x1, -y1, +fz));
-	//pFace->SetVertex(2, CVertex(-x1, -y1, -fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(-x1, -y1, -fz));
-	//pFace->SetVertex(1, CVertex(-x1, -y1, +fz));
-	//pFace->SetVertex(2, CVertex(-fx, -y3, +fz));
-	//SetMesh(i++, pFace);
-
-	//pFace = new CTriangle(3);
-	//pFace->SetVertex(0, CVertex(-x1, -y1, -fz));
-	//pFace->SetVertex(1, CVertex(-fx, -y3, +fz));
-	//pFace->SetVertex(2, CVertex(-fx, -y3, -fz));
-	//SetMesh(i++, pFace);
 }
 
 CAirplaneMesh::~CAirplaneMesh()

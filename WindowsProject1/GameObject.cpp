@@ -1,6 +1,19 @@
-#include "framework.h"
+﻿#include "framework.h"
 #include "GameObject.h"
 #include "GraphicsPipeline.h"
+
+std::uniform_real_distribution<float> disFloat{ -1.f, 1.f };
+
+XMVECTOR RandomUnitVectorOnSphere()
+{
+	XMVECTOR xmvOne = XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+
+	while (true)
+	{
+		XMVECTOR v = XMVectorSet(disFloat(rde), disFloat(rde), disFloat(rde), 0.0f);
+		if (!XMVector3Greater(XMVector3LengthSq(v), xmvOne)) return(XMVector3Normalize(v));
+	}
+}
 
 CGameObject::~CGameObject()
 {
@@ -30,20 +43,9 @@ void CGameObject::SetPosition(XMFLOAT3& xmf3Position)
 	m_xmf4x4World._43 = xmf3Position.z;
 }
 
-void CGameObject::SetMovingDirection(const XMFLOAT3& xmf3MovingDirection)
+XMFLOAT3 CGameObject::GetPosition()
 {
-	XMStoreFloat3(
-		&m_xmf3MovingDirection,
-		XMVector3Normalize(XMLoadFloat3(&xmf3MovingDirection)
-		));
-}
-
-void CGameObject::SetRotationAxis(const XMFLOAT3& xmf3RotationAxis)
-{
-	XMStoreFloat3(
-		&m_xmf3RotationAxis,
-		XMVector3Normalize(XMLoadFloat3(&xmf3RotationAxis)
-		));
+	return XMFLOAT3(m_xmf4x4World._41, m_xmf4x4World._42, m_xmf4x4World._43);
 }
 
 void CGameObject::Move(XMFLOAT3& xmf3Direction, float fSpeed)
@@ -53,6 +55,22 @@ void CGameObject::Move(XMFLOAT3& xmf3Direction, float fSpeed)
 		m_xmf4x4World._42 + xmf3Direction.y * fSpeed,
 		m_xmf4x4World._43 + xmf3Direction.z * fSpeed
 	);
+}
+
+void CGameObject::LookTo(XMFLOAT3& xmf3LookTo, XMFLOAT3& xmf3Up)
+{
+	XMFLOAT4X4 xmf4x4View = Matrix4x4::LookToLH(GetPosition(), xmf3LookTo, xmf3Up);
+	m_xmf4x4World._11 = xmf4x4View._11; m_xmf4x4World._12 = xmf4x4View._21; m_xmf4x4World._13 = xmf4x4View._31;
+	m_xmf4x4World._21 = xmf4x4View._12; m_xmf4x4World._22 = xmf4x4View._22; m_xmf4x4World._23 = xmf4x4View._32;
+	m_xmf4x4World._31 = xmf4x4View._13; m_xmf4x4World._32 = xmf4x4View._23; m_xmf4x4World._33 = xmf4x4View._33;
+}
+
+void CGameObject::LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
+{
+	XMFLOAT4X4 xmf4x4View = Matrix4x4::LookAtLH(GetPosition(), xmf3LookAt, xmf3Up);
+	m_xmf4x4World._11 = xmf4x4View._11; m_xmf4x4World._12 = xmf4x4View._21; m_xmf4x4World._13 = xmf4x4View._31;
+	m_xmf4x4World._21 = xmf4x4View._12; m_xmf4x4World._22 = xmf4x4View._22; m_xmf4x4World._23 = xmf4x4View._32;
+	m_xmf4x4World._31 = xmf4x4View._13; m_xmf4x4World._32 = xmf4x4View._23; m_xmf4x4World._33 = xmf4x4View._33;
 }
 
 void CGameObject::Rotate(float fPitch, float fYaw, float fRoll)
@@ -85,38 +103,193 @@ void CGameObject::UpdateBoundingBox()
 	}
 }
 
-// render with frustum culling
-void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
-{
-	if (pCamera->IsInFrustum(m_xmOOBB)) {
-		CGameObject::Render(hDCFrameBuffer, pCamera, m_pMesh);
-	}
-	else {
-		OutputDebugStringW(L"Frustum Culling called!\n");
-	}
+bool CGameObject::FrustumCullingTest(CCamera* pCamera) {
+	return pCamera->IsInFrustum(m_xmOOBB);
 }
 
-void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, CMesh* pMesh)
+// render called by instance
+void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 {
-	if (m_pMesh) {
-		CGraphicsPipeline::SetWorldTransform(&m_xmf4x4World);
+	CGameObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+}
+
+void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
+{
+	if (pMesh) {
+		CGraphicsPipeline::SetWorldTransform(pxmf4x4World);
 		
-		XMMATRIX mtxWorldInv = XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_xmf4x4World));
+		XMMATRIX mtxWorldInv = XMMatrixInverse(nullptr, XMLoadFloat4x4(pxmf4x4World));
 		XMVECTOR vLocalCameraPos = XMVector3TransformCoord(XMLoadFloat3(&pCamera->GetPosition()), mtxWorldInv);
 
 		if (not hPen) {
 			hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
 		}
 		if (not hBrush) {
-			hBrush = ::CreateSolidBrush(m_dwColor);
+			//hBrush = ::CreateSolidBrush(m_dwColor);
+			hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
 		}
 		
 		HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
 		HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
 
-		m_pMesh->Render(hDCFrameBuffer, pCamera, vLocalCameraPos);
+		pMesh->Render(hDCFrameBuffer, pCamera, vLocalCameraPos);
 
 		::SelectObject(hDCFrameBuffer, hOldPen);
 		::SelectObject(hDCFrameBuffer, hOldBrush);
 	}
+}
+
+// ===========================================================================
+CWallsObject::CWallsObject()
+// ===========================================================================
+{
+
+}
+
+CWallsObject::~CWallsObject()
+{
+
+}
+
+void CWallsObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+{
+	CGameObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+}
+
+
+
+// ===========================================================================
+XMFLOAT3 CExplosiveObject::m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
+CMesh* CExplosiveObject::m_pExplosionMesh = nullptr;
+
+CExplosiveObject::CExplosiveObject()
+{
+
+}
+
+CExplosiveObject::~CExplosiveObject()
+{
+	if (m_pExplosionMesh) {
+		delete m_pExplosionMesh;
+		m_pExplosionMesh = nullptr;
+	}
+}
+
+void CExplosiveObject::PrepareExplosion()
+{
+	for (int i = 0; i < EXPLOSION_DEBRISES; i++) XMStoreFloat3(&m_pxmf3SphereVectors[i], ::RandomUnitVectorOnSphere());
+
+	m_pExplosionMesh = new CCubeMesh(0.5f, 0.5f, 0.5f);
+}
+
+void CExplosiveObject::Animate(float fElapsedTime)
+{
+	if (m_bBlowingUp)
+	{
+		m_fElapsedTimes += fElapsedTime;
+
+		// 파티클 lifetime동안 파티클 별 방향으로 이동 및 방향벡터 기준 회전
+		if (m_fElapsedTimes <= m_fDuration)
+		{
+			XMFLOAT3 xmf3Position = GetPosition();
+			for (int i = 0; i < EXPLOSION_DEBRISES; i++)
+			{
+				m_pxmf4x4Transforms[i] = Matrix4x4::Identity();
+				m_pxmf4x4Transforms[i]._41 = xmf3Position.x + m_pxmf3SphereVectors[i].x * m_fExplosionSpeed * m_fElapsedTimes;
+				m_pxmf4x4Transforms[i]._42 = xmf3Position.y + m_pxmf3SphereVectors[i].y * m_fExplosionSpeed * m_fElapsedTimes;
+				m_pxmf4x4Transforms[i]._43 = xmf3Position.z + m_pxmf3SphereVectors[i].z * m_fExplosionSpeed * m_fElapsedTimes;
+				m_pxmf4x4Transforms[i] = Matrix4x4::Multiply(Matrix4x4::RotationAxis(m_pxmf3SphereVectors[i], m_fExplosionRotation * m_fElapsedTimes), m_pxmf4x4Transforms[i]);
+			}
+		}
+		else
+		{
+			m_bBlowingUp = false;
+			m_fElapsedTimes = 0.0f;
+		}
+	}
+	else
+	{
+		CGameObject::Animate(fElapsedTime);
+	}
+}
+
+void CExplosiveObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+{
+	if (m_bBlowingUp) {
+		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+			// TODO : 파티클도 절두체 컬링 수행
+			CGameObject::Render(hDCFrameBuffer, pCamera, m_pxmf4x4Transforms, m_pExplosionMesh);
+		}
+	}
+	else {
+		CGameObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+	}
+}
+
+
+// ===========================================================================
+CBulletObject::CBulletObject(float fEffectiveRange)
+// ===========================================================================
+{
+	m_fBulletEffectiveRange = fEffectiveRange;
+}
+
+CBulletObject::~CBulletObject()
+{
+}
+
+void CBulletObject::SetFirePosition(XMFLOAT3 xmf3FirePosition)
+{
+	m_xmf3FirePosition = xmf3FirePosition;
+	SetPosition(xmf3FirePosition);
+}
+
+void CBulletObject::Reset()
+{
+	m_pLockedObject = nullptr;
+	m_fElapsedTimeAfterFire = 0;
+	m_fMovingDistance = 0;
+	m_fRotationAngle = 0.0f;
+
+	m_bActive = false;
+}
+
+void CBulletObject::Animate(float fElapsedTime)
+{
+	m_fElapsedTimeAfterFire += fElapsedTime;
+
+	float fDistance = m_fMovingSpeed * fElapsedTime;
+
+	if ((m_fElapsedTimeAfterFire > m_fLockingDelayTime) && m_pLockedObject)
+	{
+		XMFLOAT3 xmf3Position = GetPosition();
+		XMVECTOR xmvPosition = XMLoadFloat3(&xmf3Position);
+
+		XMFLOAT3 xmf3LockedObjectPosition = m_pLockedObject->GetPosition();
+		XMVECTOR xmvLockedObjectPosition = XMLoadFloat3(&xmf3LockedObjectPosition);
+		// 락온 대상까지의 방향 벡터
+		XMVECTOR xmvToLockedObject = XMVectorSubtract(xmvLockedObjectPosition, xmvPosition);
+		xmvToLockedObject = XMVector3Normalize(xmvToLockedObject);
+
+		XMVECTOR xmvMovingDirection = XMLoadFloat3(&m_xmf3MovingDirection);
+		// 현재 이동방향 벡터와 목표물 방향 벡터를 선형 보간 후 정규화
+		xmvMovingDirection = XMVector3Normalize(XMVectorLerp(xmvMovingDirection, xmvToLockedObject, 0.25f));
+		// 갱신
+		XMStoreFloat3(&m_xmf3MovingDirection, xmvMovingDirection);
+	}
+
+	// 총알 회전 효과
+	XMFLOAT4X4 mtxRotate = Matrix4x4::RotationYawPitchRoll(0.0f, m_fRotationSpeed * fElapsedTime, 0.0f);
+	m_xmf4x4World = Matrix4x4::Multiply(mtxRotate, m_xmf4x4World);
+
+	XMFLOAT3 xmf3Movement = Vector3::ScalarProduct(m_xmf3MovingDirection, fDistance, false);
+	XMFLOAT3 xmf3Position = GetPosition();
+	xmf3Position = Vector3::Add(xmf3Position, xmf3Movement);
+	SetPosition(xmf3Position);
+	m_fMovingDistance += fDistance;
+
+	UpdateBoundingBox();
+
+	// 총알 사거리 벗어나거나 lifetime 끝인 경우 리셋
+	if ((m_fMovingDistance > m_fBulletEffectiveRange) || (m_fElapsedTimeAfterFire > m_fLockingTime)) Reset();
 }

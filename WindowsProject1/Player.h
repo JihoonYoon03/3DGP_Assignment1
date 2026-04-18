@@ -62,6 +62,16 @@ public:
 	CAirplanePlayer();
 	virtual ~CAirplanePlayer();
 
+	void FireBullet(CGameObject* pLockedObject, std::vector<CGameObject*>& vBullets);
+	const unsigned int getMaxAmmo() const { return m_ammo; }
+	const float getRange() const { return m_bulletRange; }
+
 	virtual void OnUpdateTransform();
+	virtual void Animate(float fElapsedTime);
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
+
+private:
+	float			m_bulletRange = 150.f;
+	unsigned int	m_ammo = 50;
 };
 

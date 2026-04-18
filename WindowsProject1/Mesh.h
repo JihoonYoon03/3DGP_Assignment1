@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 /*// == XMFLOAT3
 class CPoint3D {
@@ -28,8 +28,8 @@ public:
 	CTriangle(const uint32_t& index) : m_StartIndex(index) {}
 	virtual ~CTriangle() {}
 
-	uint32_t			m_StartIndex;
-	XMFLOAT3			m_Normal;
+	uint32_t			m_StartIndex = 0;
+	XMFLOAT3			m_Normal{};
 	float				m_averageZ = 0;
 
 	void CalculateNormal(const CVertex& vertex0, const CVertex& vertex1, const CVertex& vertex2);
@@ -40,7 +40,7 @@ public:
 	CMesh() {}
 	virtual ~CMesh();
 
-	void SetMesh(std::vector<CVertex>&& vertices, std::vector<uint32_t>&& indices);
+	void SetMesh(std::vector<CVertex>& vertices, std::vector<uint32_t>& indices);
 
 	//virtual void Render(HDC hDCFrameBuffer, class CCamera* camera);
 	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera, const XMVECTOR& LocalCameraPos);
@@ -53,14 +53,14 @@ public:
 private:
 	int m_nReferences = 1;
 	
-	// raw µ¥ÀÌÅÍ (Á¤Á¡, ÀÎµ¦½º)
+	// raw ë°ì´í„° (ì •ì , ì¸ë±ìŠ¤)
 	std::vector<CVertex>	m_Vertices;
 	std::vector<uint32_t>	m_Indices;
 
-	// Æò¸é µ¥ÀÌÅÍ (ÀÎµ¦½º À§Ä¡, ³ë¸Ö)
+	// í‰ë©´ ë°ì´í„° (ì¸ë±ìŠ¤ ìœ„ì¹˜, ë…¸ë©€)
 	std::vector<CTriangle>	m_Triangles;
 
-	// ÃÖÁ¾ÀûÀ¸·Î ±×·Á³¾ Á¤Á¡ ¸ğÀÓ
+	// ìµœì¢…ì ìœ¼ë¡œ ê·¸ë ¤ë‚¼ ì •ì  ëª¨ì„
 	size_t m_nDrawingPoints = 0;
 	std::vector<POINT> m_vDrawingPoints;
 };
@@ -69,6 +69,13 @@ class CCubeMesh : public CMesh {
 public:
 	CCubeMesh(float fWidth = 4.f, float fHeight = 4.f, float fDepth = 4.f);
 	virtual ~CCubeMesh();
+};
+
+class CWallMesh : public CMesh
+{
+public:
+	CWallMesh(float fWidth = 4.0f, float fHeight = 4.0f, float fDepth = 4.0f, int nSubRects = 20);
+	virtual ~CWallMesh() {}
 };
 
 class CAirplaneMesh : public CMesh {

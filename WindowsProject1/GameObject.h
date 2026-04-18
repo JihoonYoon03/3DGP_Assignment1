@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 
 #include "Mesh.h"
 #include "Camera.h"
@@ -16,14 +16,21 @@ public:
 
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3& xmf3Position);
-	
-	void SetMovingDirection(const XMFLOAT3& xmf3MovingDirection);
+
+	XMFLOAT3 GetPosition();
+	const bool& isActive() const { return m_bActive; }
+
+	void SetMovingDirection(const XMFLOAT3& xmf3MovingDirection) { m_xmf3MovingDirection = Vector3::Normalize(xmf3MovingDirection); };
 	void SetMovingSpeed(float fSpeed) { m_fMovingSpeed = fSpeed; }
 	void SetMovingRange(float fRange) { m_fMovingRange = fRange; }
 
-	void SetRotationAxis(const XMFLOAT3& xmf3RotationAxis);
+	void SetRotationAxis(const XMFLOAT3& xmf3RotationAxis) { m_xmf3RotationAxis = Vector3::Normalize(xmf3RotationAxis); };
 	void SetRotationSpeed(float fSpeed) { m_fRotationSpeed = fSpeed; }
 
+	void LookTo(XMFLOAT3& xmf3LookTo, XMFLOAT3& xmf3Up);
+	void LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
+
+	void SetWorldMatrix(const XMFLOAT4X4& matrix) { m_xmf4x4World = matrix; }
 	const XMFLOAT4X4& GetWorldMatrix() const { return m_xmf4x4World; }
 	
 	void Move(XMFLOAT3& xmf3Direction, float fSpeed);
@@ -36,8 +43,9 @@ public:
 	void UpdateBoundingBox();
 
 	virtual void Animate(float fElapsedTime);
+	bool FrustumCullingTest(CCamera* pCamera);
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
-	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, CMesh* pMesh);
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh);
 
 protected:
 	bool						m_bActive = true;
@@ -51,13 +59,13 @@ protected:
 	XMFLOAT3					m_xmf3RotationAxis = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	float						m_fRotationSpeed = 0.0f;
 
-	// ∏æÁ(∏ﬁΩ¨/∏µ®)
+	// Î™®Ïñë(Î©îÏâ¨/Î™®Îç∏)
 	CMesh*						m_pMesh = nullptr;
 
 	BoundingOrientedBox			m_xmOOBB = BoundingOrientedBox();
 	CGameObject*				m_pObjectCollided = nullptr;
 
-	// ∞‘¿” ∞¥√º¿« ªˆªÛ¿Ã¥Ÿ.
+	// Í≤åÏûÑ Í∞ùÏ≤¥Ïùò ÏÉâÏÉÅÏù¥Îã§.
 	DWORD						m_dwColor = RGB(255, 0, 0);
 
 	HPEN hPen = NULL;
@@ -65,3 +73,68 @@ protected:
 
 };
 
+class CExplosiveObject : public CGameObject
+{
+public:
+	CExplosiveObject();
+	virtual ~CExplosiveObject();
+
+	bool						m_bBlowingUp = false;
+
+	XMFLOAT4X4					m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
+
+	float						m_fElapsedTimes = 0.0f;
+	float						m_fDuration = 2.0f;
+	float						m_fExplosionSpeed = 10.0f;
+	float						m_fExplosionRotation = 720.0f;
+
+	virtual void Animate(float fElapsedTime);
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
+
+public:
+	static CMesh* m_pExplosionMesh;
+	static XMFLOAT3				m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
+
+	static void PrepareExplosion();
+};
+
+
+class CWallsObject : public CGameObject
+{
+public:
+	CWallsObject();
+	virtual ~CWallsObject();
+
+public:
+	BoundingOrientedBox			m_xmOOBBPlayerMoveCheck = BoundingOrientedBox();
+	XMFLOAT4					m_pxmf4WallPlanes[6];
+
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
+};
+
+class CBulletObject : public CGameObject
+{
+public:
+	CBulletObject(float fEffectiveRange);
+	virtual ~CBulletObject();
+
+	void SetFirePosition(XMFLOAT3 xmf3FirePosition);
+
+	void SetLockedObject(CGameObject* object) { m_pLockedObject = object; }
+
+	virtual void Animate(float fElapsedTime);
+
+private:
+	float						m_fBulletEffectiveRange = 50.0f;
+	float						m_fMovingDistance = 0.0f;
+	float						m_fRotationAngle = 0.0f;
+	XMFLOAT3					m_xmf3FirePosition = XMFLOAT3(0.0f, 0.0f, 1.0f);
+
+	float						m_fElapsedTimeAfterFire = 0.0f;
+	float						m_fLockingDelayTime = 0.3f;
+	float						m_fLockingTime = 4.0f;
+
+	CGameObject* m_pLockedObject = nullptr;
+
+	void Reset();
+};

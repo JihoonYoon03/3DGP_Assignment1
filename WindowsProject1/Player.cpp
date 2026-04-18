@@ -163,5 +163,70 @@ void CAirplanePlayer::OnUpdateTransform()
 {
 	CPlayer::OnUpdateTransform();
 
-	XMStoreFloat4x4(&m_xmf4x4World, XMMatrixMultiply(XMMatrixRotationRollPitchYaw(XMConvertToRadians(90.0f), 0.0f, 0.0f), XMLoadFloat4x4(&m_xmf4x4World)));
+	m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(XMConvertToRadians(90.0f), 0.0f, 0.0f), m_xmf4x4World);
+}
+
+void CAirplanePlayer::Animate(float fElapsedTime)
+{
+	CPlayer::Animate(fElapsedTime);
+
+	/*
+	for (auto& bullet : m_vBullets)	{
+		if (bullet->isActive()) bullet->Animate(fElapsedTime);
+	}
+	*/
+}
+
+void CAirplanePlayer::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+{
+	CPlayer::Render(hDCFrameBuffer, pCamera);
+
+	/*
+	for (auto& bullet : m_vBullets) {
+		if (bullet->isActive())
+			bullet->Render(hDCFrameBuffer, pCamera);
+	}
+	*/
+}
+
+
+void CAirplanePlayer::FireBullet(CGameObject* pLockedObject, std::vector<CGameObject*>& vBullets)
+{
+	/*
+		if (pLockedObject)
+		{
+			LookAt(pLockedObject->GetPosition(), XMFLOAT3(0.0f, 1.0f, 0.0f));
+			OnUpdateTransform();
+		}
+	*/
+
+	CBulletObject* pBulletObject = nullptr;
+	for (const auto& bullet: vBullets)
+	{
+		if (not bullet->isActive())
+		{
+			pBulletObject = static_cast<CBulletObject*>(bullet);
+			break;
+		}
+	}
+
+	if (pBulletObject)
+	{
+		XMFLOAT3 xmf3Position = GetPosition();
+		XMFLOAT3 xmf3Direction = GetLook();
+		XMFLOAT3 xmf3FirePosition = Vector3::Add(xmf3Position, Vector3::ScalarProduct(xmf3Direction, 6.0f, false));
+
+		pBulletObject->SetWorldMatrix(m_xmf4x4World);
+
+		pBulletObject->SetFirePosition(xmf3FirePosition);
+		pBulletObject->SetMovingDirection(xmf3Direction);
+		pBulletObject->SetColor(RGB(255, 0, 0));
+		pBulletObject->SetActive(true);
+
+		if (pLockedObject)
+		{
+			pBulletObject->SetLockedObject(pLockedObject);
+			pBulletObject->SetColor(RGB(0, 0, 255));
+		}
+	}
 }
