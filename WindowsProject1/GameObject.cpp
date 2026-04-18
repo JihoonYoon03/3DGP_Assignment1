@@ -169,15 +169,13 @@ CExplosiveObject::CExplosiveObject()
 
 CExplosiveObject::~CExplosiveObject()
 {
-	if (m_pExplosionMesh) {
-		delete m_pExplosionMesh;
-		m_pExplosionMesh = nullptr;
-	}
+
 }
 
 void CExplosiveObject::PrepareExplosion()
 {
-	for (int i = 0; i < EXPLOSION_DEBRISES; i++) XMStoreFloat3(&m_pxmf3SphereVectors[i], ::RandomUnitVectorOnSphere());
+	for (int i = 0; i < EXPLOSION_DEBRISES; i++)
+		XMStoreFloat3(&m_pxmf3SphereVectors[i], RandomUnitVectorOnSphere());
 
 	m_pExplosionMesh = new CCubeMesh(0.5f, 0.5f, 0.5f);
 }
@@ -218,11 +216,19 @@ void CExplosiveObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 	if (m_bBlowingUp) {
 		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
 			// TODO : 파티클도 절두체 컬링 수행
-			CGameObject::Render(hDCFrameBuffer, pCamera, m_pxmf4x4Transforms, m_pExplosionMesh);
+			CGameObject::Render(hDCFrameBuffer, pCamera, &m_pxmf4x4Transforms[i], m_pExplosionMesh);
 		}
 	}
 	else {
 		CGameObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+	}
+}
+
+void CExplosiveObject::HandleCollision(CGameObject* objCollided, const eObjType objType)
+{
+	if (objCollided && objType == eObjType::Bullet) {
+		OutputDebugStringW(L"Explosive Collided");
+		m_bBlowingUp = true;
 	}
 }
 
@@ -292,4 +298,12 @@ void CBulletObject::Animate(float fElapsedTime)
 
 	// 총알 사거리 벗어나거나 lifetime 끝인 경우 리셋
 	if ((m_fMovingDistance > m_fBulletEffectiveRange) || (m_fElapsedTimeAfterFire > m_fLockingTime)) Reset();
+}
+
+void CBulletObject::HandleCollision(CGameObject* objCollided, const eObjType objType)
+{
+	if (objCollided && objType == eObjType::Explosive) {
+		OutputDebugStringW(L"Bullet Collided");
+		this->Reset();
+	}
 }

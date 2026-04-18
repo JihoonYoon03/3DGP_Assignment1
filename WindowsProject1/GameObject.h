@@ -17,9 +17,6 @@ public:
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3& xmf3Position);
 
-	XMFLOAT3 GetPosition();
-	const bool& isActive() const { return m_bActive; }
-
 	void SetMovingDirection(const XMFLOAT3& xmf3MovingDirection) { m_xmf3MovingDirection = Vector3::Normalize(xmf3MovingDirection); };
 	void SetMovingSpeed(float fSpeed) { m_fMovingSpeed = fSpeed; }
 	void SetMovingRange(float fRange) { m_fMovingRange = fRange; }
@@ -31,7 +28,6 @@ public:
 	void LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
 
 	void SetWorldMatrix(const XMFLOAT4X4& matrix) { m_xmf4x4World = matrix; }
-	const XMFLOAT4X4& GetWorldMatrix() const { return m_xmf4x4World; }
 	
 	void Move(XMFLOAT3& xmf3Direction, float fSpeed);
 
@@ -46,6 +42,13 @@ public:
 	bool FrustumCullingTest(CCamera* pCamera);
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh);
+
+	virtual void HandleCollision(CGameObject* objCollided, const eObjType objType) {}
+
+	XMFLOAT3 GetPosition();
+	const XMFLOAT4X4& GetWorldMatrix() const { return m_xmf4x4World; }
+	const BoundingOrientedBox& GetOOBB() const { return m_xmOOBB; }
+	const bool& isActive() const { return m_bActive; }
 
 protected:
 	bool						m_bActive = true;
@@ -88,8 +91,9 @@ public:
 	float						m_fExplosionSpeed = 10.0f;
 	float						m_fExplosionRotation = 720.0f;
 
-	virtual void Animate(float fElapsedTime);
-	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
+	void Animate(float fElapsedTime) override;
+	void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
+	void HandleCollision(CGameObject* objCollided, const eObjType objType) override;
 
 public:
 	static CMesh* m_pExplosionMesh;
@@ -109,7 +113,7 @@ public:
 	BoundingOrientedBox			m_xmOOBBPlayerMoveCheck = BoundingOrientedBox();
 	XMFLOAT4					m_pxmf4WallPlanes[6];
 
-	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
+	void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
 };
 
 class CBulletObject : public CGameObject
@@ -122,7 +126,8 @@ public:
 
 	void SetLockedObject(CGameObject* object) { m_pLockedObject = object; }
 
-	virtual void Animate(float fElapsedTime);
+	void Animate(float fElapsedTime) override;
+	void HandleCollision(CGameObject* objCollided, const eObjType objType) override;
 
 private:
 	float						m_fBulletEffectiveRange = 50.0f;

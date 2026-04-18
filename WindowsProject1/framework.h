@@ -56,6 +56,8 @@ constexpr int FRAMEBUFFER_HEIGHT	= 480;
 // 실제 변수는 GameFramework.cpp에 있음
 extern std::mt19937 rde;
 
+enum class eObjType { Terrain, Player, Bullet, Explosive, TypeMax };
+
 inline bool IsZero(float fValue) { return((fabsf(fValue) < EPSILON)); }
 inline bool IsEqual(float fA, float fB) { return(::IsZero(fA - fB)); }
 

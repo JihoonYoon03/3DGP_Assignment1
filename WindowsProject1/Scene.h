@@ -11,8 +11,6 @@ public:
 	virtual ~CScene();
 
 private:
-	enum class eObjType { Terrain, Player, Bullet, Explosive, TypeMax };
-
 	// 게임 객체들의 개수와 게임 객체들의 리스트(배열)이다.
 	std::unordered_map<eObjType, std::vector<CGameObject*>> m_mapObjects;
 
@@ -23,6 +21,8 @@ public:
 	virtual void ReleaseObjects();
 
 	void FireBullet(CGameObject* pLockedObject);
+
+	void CheckCollision(const eObjType, const eObjType);
 	
 	// 게임 객체들을 애니메이션한다. 
 	virtual void Animate(float fElapsedTime);

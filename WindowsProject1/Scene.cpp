@@ -107,6 +107,18 @@ void CScene::FireBullet(CGameObject* pLockedObject)
 	static_cast<CAirplanePlayer*>(m_pPlayer)->FireBullet(pLockedObject, m_mapObjects.at(eObjType::Bullet));
 }
 
+void CScene::CheckCollision(const eObjType typeA, const eObjType typeB)
+{
+	for (auto& objectA : m_mapObjects.at(typeA)) {
+		for (auto& objectB : m_mapObjects.at(typeB)) {
+			if (objectA->isActive() && objectB->isActive() && objectA->GetOOBB().Intersects(objectB->GetOOBB())) {
+				objectA->HandleCollision(objectB, typeB);
+				objectB->HandleCollision(objectA, typeA);
+			}
+		}
+	}
+}
+
 void CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
 }
@@ -149,6 +161,8 @@ void CScene::Animate(float fElapsedTime)
 				object->Animate(fElapsedTime);
 		}
 	}
+
+	CheckCollision(eObjType::Bullet, eObjType::Explosive);
 }
 
 void CScene::Render(HDC hDCFrameBuffer, CCamera* pCamera)
