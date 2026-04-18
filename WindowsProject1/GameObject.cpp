@@ -187,11 +187,9 @@ void CExplosiveObject::Animate(float fElapsedTime)
 		m_fElapsedTimes += fElapsedTime;
 
 		// 파티클 lifetime동안 파티클 별 방향으로 이동 및 방향벡터 기준 회전
-		if (m_fElapsedTimes <= m_fDuration)
-		{
+		if (m_fElapsedTimes <= m_fDuration)	{
 			XMFLOAT3 xmf3Position = GetPosition();
-			for (int i = 0; i < EXPLOSION_DEBRISES; i++)
-			{
+			for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
 				m_pxmf4x4Transforms[i] = Matrix4x4::Identity();
 				m_pxmf4x4Transforms[i]._41 = xmf3Position.x + m_pxmf3SphereVectors[i].x * m_fExplosionSpeed * m_fElapsedTimes;
 				m_pxmf4x4Transforms[i]._42 = xmf3Position.y + m_pxmf3SphereVectors[i].y * m_fExplosionSpeed * m_fElapsedTimes;
@@ -199,10 +197,15 @@ void CExplosiveObject::Animate(float fElapsedTime)
 				m_pxmf4x4Transforms[i] = Matrix4x4::Multiply(Matrix4x4::RotationAxis(m_pxmf3SphereVectors[i], m_fExplosionRotation * m_fElapsedTimes), m_pxmf4x4Transforms[i]);
 			}
 		}
-		else
-		{
+		else {
 			m_bBlowingUp = false;
 			m_fElapsedTimes = 0.0f;
+			XMFLOAT3 xmf3Position = GetPosition();
+			for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+				m_pxmf4x4Transforms[i]._41 = xmf3Position.x;
+				m_pxmf4x4Transforms[i]._42 = xmf3Position.y;
+				m_pxmf4x4Transforms[i]._43 = xmf3Position.z;
+			}
 		}
 	}
 	else
@@ -215,7 +218,7 @@ void CExplosiveObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 {
 	if (m_bBlowingUp) {
 		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
-			// TODO : 파티클도 절두체 컬링 수행
+			// TODO: 파티클 출력 시스템 분리
 			CGameObject::Render(hDCFrameBuffer, pCamera, &m_pxmf4x4Transforms[i], m_pExplosionMesh);
 		}
 	}
