@@ -25,10 +25,10 @@ public:
 class CTriangle {
 public:
 	CTriangle() {}
-	CTriangle(const uint32_t& index) : m_StartIndex(index) {}
+	CTriangle(const UINT& index) : m_StartIndex(index) {}
 	virtual ~CTriangle() {}
 
-	uint32_t			m_StartIndex = 0;
+	UINT			m_StartIndex = 0;
 	XMFLOAT3			m_Normal{};
 	float				m_averageZ = 0;
 
@@ -38,11 +38,12 @@ public:
 class CMesh {
 public:
 	CMesh() {}
+	CMesh(const WCHAR* fileName);
 	virtual ~CMesh();
 
-	void SetMesh(std::vector<CVertex>& vertices, std::vector<uint32_t>& indices);
-
-	//virtual void Render(HDC hDCFrameBuffer, class CCamera* camera);
+	void LoadMeshFromObj(const WCHAR* pstrFileName);
+	void SetMesh(std::vector<CVertex>& vertices, std::vector<UINT>& indices);
+	
 	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera, const XMVECTOR& LocalCameraPos);
 
 	void AddRef() { m_nReferences++; }
@@ -55,7 +56,7 @@ private:
 	
 	// raw 데이터 (정점, 인덱스)
 	std::vector<CVertex>	m_Vertices;
-	std::vector<uint32_t>	m_Indices;
+	std::vector<UINT>	m_Indices;
 
 	// 평면 데이터 (인덱스 위치, 노멀)
 	std::vector<CTriangle>	m_Triangles;

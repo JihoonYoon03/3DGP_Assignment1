@@ -125,8 +125,8 @@ void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4
 			hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
 		}
 		if (not hBrush) {
-			//hBrush = ::CreateSolidBrush(m_dwColor);
-			hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
+			hBrush = ::CreateSolidBrush(m_dwColor);
+			//hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
 		}
 		
 		HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
@@ -227,7 +227,7 @@ void CExplosiveObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 void CExplosiveObject::HandleCollision(CGameObject* objCollided, const eObjType objType)
 {
 	if (objCollided && objType == eObjType::Bullet) {
-		OutputDebugStringW(L"Explosive Collided");
+		OutputDebugStringW(L"Explosive Collided\n");
 		m_bBlowingUp = true;
 	}
 }
@@ -285,7 +285,7 @@ void CBulletObject::Animate(float fElapsedTime)
 	}
 
 	// 총알 회전 효과
-	XMFLOAT4X4 mtxRotate = Matrix4x4::RotationYawPitchRoll(0.0f, m_fRotationSpeed * fElapsedTime, 0.0f);
+	XMFLOAT4X4 mtxRotate = Matrix4x4::RotationYawPitchRoll(0.0f, 0.0f, m_fRotationSpeed * fElapsedTime);
 	m_xmf4x4World = Matrix4x4::Multiply(mtxRotate, m_xmf4x4World);
 
 	XMFLOAT3 xmf3Movement = Vector3::ScalarProduct(m_xmf3MovingDirection, fDistance, false);
@@ -303,7 +303,7 @@ void CBulletObject::Animate(float fElapsedTime)
 void CBulletObject::HandleCollision(CGameObject* objCollided, const eObjType objType)
 {
 	if (objCollided && objType == eObjType::Explosive) {
-		OutputDebugStringW(L"Bullet Collided");
+		OutputDebugStringW(L"Bullet Collided\n");
 		this->Reset();
 	}
 }

@@ -163,7 +163,7 @@ void CAirplanePlayer::OnUpdateTransform()
 {
 	CPlayer::OnUpdateTransform();
 
-	m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(XMConvertToRadians(90.0f), 0.0f, 0.0f), m_xmf4x4World);
+	m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(0.0f, DegreeToRadian(-90.0f), 0.0f), m_xmf4x4World);
 }
 
 void CAirplanePlayer::Animate(float fElapsedTime)
@@ -216,7 +216,7 @@ void CAirplanePlayer::FireBullet(CGameObject* pLockedObject, std::vector<CGameOb
 		XMFLOAT3 xmf3Direction = GetLook();
 		XMFLOAT3 xmf3FirePosition = Vector3::Add(xmf3Position, Vector3::ScalarProduct(xmf3Direction, 6.0f, false));
 
-		pBulletObject->SetWorldMatrix(m_xmf4x4World);
+		pBulletObject->SetWorldMatrix(Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(0.f, DegreeToRadian(90.f), 0.f), m_xmf4x4World));
 
 		pBulletObject->SetFirePosition(xmf3FirePosition);
 		pBulletObject->SetMovingDirection(xmf3Direction);

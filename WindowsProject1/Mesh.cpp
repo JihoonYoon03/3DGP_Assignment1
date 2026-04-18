@@ -25,8 +25,13 @@ void CTriangle::CalculateNormal(const CVertex& vertex0, const CVertex& vertex1, 
 //}
 
 //=============================
-CMesh::~CMesh()
+CMesh::CMesh(const WCHAR* fileName)
 //=============================
+{
+	LoadMeshFromObj(fileName);
+}
+
+CMesh::~CMesh()
 {
 
 }
@@ -38,15 +43,49 @@ void CMesh::Release()
 		delete this;
 }
 
-//void CMesh::SetMesh(int nIndex, CTriangle* pPolygon)
-//{
-//	if ((0 <= nIndex) && (nIndex < m_nPolygons)) {
-//		m_ppPolygons[nIndex] = pPolygon;
-//		m_nDrawingPoints += pPolygon->m_nVertices;
-//	}
-//}
+void CMesh::LoadMeshFromObj(const WCHAR* fileName)
+{
+	std::ifstream file(fileName);
+	if (not file) {
+		OutputDebugStringW(L".Obj file Load Error\n");
+		return;
+	}
 
-void CMesh::SetMesh(std::vector<CVertex>& vertices, std::vector<uint32_t>& indices)
+	std::string line;
+	std::vector<CVertex> vertexBuf;
+	std::vector<UINT> indiceBuf;
+
+	while (std::getline(file, line))
+	{
+		if (line.empty()) continue;
+		std::stringstream ss(line);
+		std::string prefix;
+		ss >> prefix;
+
+		if (prefix == "v") {
+			XMFLOAT3 pos;
+			ss >> pos.x >> pos.y >> pos.z;
+			vertexBuf.push_back(CVertex(pos.x * 0.05f, pos.y * 0.05f, pos.z * 0.05f));
+		}
+		else if (prefix == "f") {
+			UINT i[3];
+			ss >> i[0] >> i[1] >> i[2];
+
+			// 1-based index를 0-based로 변환하여 인덱스 벡터에 저장
+			UINT idx1 = i[0] - 1;
+			UINT idx2 = i[1] - 1;
+			UINT idx3 = i[2] - 1;
+
+			indiceBuf.push_back(idx1);
+			indiceBuf.push_back(idx2);
+			indiceBuf.push_back(idx3);
+		}
+	}
+
+	SetMesh(vertexBuf, indiceBuf);
+}
+
+void CMesh::SetMesh(std::vector<CVertex>& vertices, std::vector<UINT>& indices)
 {
 	m_Vertices = std::move(vertices);
 	m_Indices = std::move(indices);
@@ -62,7 +101,7 @@ void CMesh::SetMesh(std::vector<CVertex>& vertices, std::vector<uint32_t>& indic
 		m_Triangles.reserve(m_Indices.size() / 3);
 
 		for (size_t i = 0; i < m_Indices.size(); i += 3) {
-			CTriangle triangle{ static_cast<uint32_t>(i) };
+			CTriangle triangle{ static_cast<UINT>(i) };
 
 			triangle.CalculateNormal(
 				m_Vertices[m_Indices[i]],
@@ -229,7 +268,7 @@ CCubeMesh::CCubeMesh(float fWidth, float fHeight, float fDepth)
 		{ +fHalfWidth, -fHalfHeight, -fHalfDepth }
 	};
 
-	std::vector<uint32_t> indices = {
+	std::vector<UINT> indices = {
 		// 앞
 		0, 1, 2, 0, 2, 3,
 
@@ -270,7 +309,7 @@ CWallMesh::CWallMesh(float fWidth, float fHeight, float fDepth, int nSubRects)
 	float fCellDepth = fDepth * (1.0f / nSubRects);
 
 	std::vector<CVertex> vertices;
-	std::vector<uint32_t> indices;
+	std::vector<UINT> indices;
 
 	// 총 사각형 개수 = (왼쪽, 오른쪽, 위, 아래) + (앞, 뒤)
 	int nTotalQuads = (4 * nSubRects * nSubRects) + 2;
@@ -279,7 +318,7 @@ CWallMesh::CWallMesh(float fWidth, float fHeight, float fDepth, int nSubRects)
 
 	// 사각형을 2개의 삼각형 단위로 나누어 인덱스와 정점을 추가
 	auto AddQuad = [&](const CVertex& v0, const CVertex& v1, const CVertex& v2, const CVertex& v3) {
-		uint32_t startIndex = static_cast<uint32_t>(vertices.size());
+		UINT startIndex = static_cast<UINT>(vertices.size());
 		vertices.push_back(v0);
 		vertices.push_back(v1);
 		vertices.push_back(v2);
@@ -387,7 +426,7 @@ CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth)
 		{   -fx, -y3,        +fz }  // 15
 	};
 
-	std::vector<uint32_t> indices = {
+	std::vector<UINT> indices = {
 		// Upper Plane
 		0, 2, 1,
 		0, 1, 3,

@@ -82,12 +82,12 @@ void CScene::BuildObjects()
 
 	objects.reserve(ammo);
 
-	CCubeMesh* pBulletMesh = new CCubeMesh(1.0f, 4.0f, 1.0f);
+	CCubeMesh* pBulletMesh = new CCubeMesh(1.0f, 1.0f, 4.0f);
 
 	for (int i = 0; i < ammo; i++) {
 		CBulletObject* bullet = new CBulletObject{ range };
 		bullet->SetMesh(pBulletMesh);
-		bullet->SetRotationAxis(XMFLOAT3(0.0f, 1.0f, 0.0f));
+		bullet->SetRotationAxis(XMFLOAT3(0.0f, 0.0f, 1.0f));
 		bullet->SetRotationSpeed(360.0f);
 		bullet->SetMovingSpeed(120.0f);
 		bullet->SetActive(false);

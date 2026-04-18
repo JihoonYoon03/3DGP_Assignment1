@@ -10,6 +10,9 @@
 #include <windows.h>
 
 // C++ 런타임 헤더 파일
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include <memory>
 #include <string>
 #include <vector>

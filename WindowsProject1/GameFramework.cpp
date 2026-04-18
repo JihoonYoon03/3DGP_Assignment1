@@ -2,7 +2,7 @@
 #include "GameFramework.h"
 
 std::random_device rd;
-std::mt19937 rde(rd());
+std::mt19937 rde{ rd() };
 
 void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 {
@@ -83,7 +83,7 @@ void CGameFramework::BuildObjects()
 
 	pCamera->GenerateOrthographicProjectionMatrix(1.01f, 50.0f, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
 
-	CAirplaneMesh* pAirplaneMesh = new CAirplaneMesh(6.0f, 6.0f, 1.0f);
+	CMesh* pAirplaneMesh = new CMesh(L"../Resources/Obj/LowPolyF22.obj");
 
 	m_pPlayer = new CAirplanePlayer();
 	m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
