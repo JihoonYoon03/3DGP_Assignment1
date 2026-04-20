@@ -1,20 +1,211 @@
-Ôªø#include "framework.h"
+#include "framework.h"
 #include "Scene.h"
 #include "GraphicsPipeline.h"
 #include "Player.h"
+#include "GameVar.h"
 
 CScene::CScene(CPlayer* pPlayer)
 {
 	m_pPlayer = pPlayer;
-	m_mapObjects.emplace(eObjType::Player, std::vector<CGameObject*>{pPlayer});
-	
+
+	if (pPlayer) m_mapObjects.emplace(eObjType::Player, std::vector<CGameObject*>{pPlayer});
 }
 
 CScene::~CScene()
 {
+	ReleaseObjects();
 }
 
-void CScene::BuildObjects()
+void CScene::CheckCollision(const eObjType typeA, const eObjType typeB)
+{
+	for (auto& objectA : m_mapObjects[typeA]) {
+		for (auto& objectB : m_mapObjects[typeB]) {
+			if (objectA->isActive() && objectB->isActive() && objectA->GetOOBB().Intersects(objectB->GetOOBB())) {
+				objectA->HandleCollision(objectB, typeB);
+				objectB->HandleCollision(objectA, typeA);
+			}
+		}
+	}
+}
+
+CGameObject* CScene::PickObjectPointedByCursor(int xClient, int yClient, CCamera* pCamera)
+{
+	XMFLOAT3 xmf3PickPosition;
+	xmf3PickPosition.x = (((2.0f * xClient) / (float)pCamera->m_Viewport.m_nWidth) - 1) / pCamera->m_xmf4x4PerspectiveProject._11;
+	xmf3PickPosition.y = -(((2.0f * yClient) / (float)pCamera->m_Viewport.m_nHeight) - 1) / pCamera->m_xmf4x4PerspectiveProject._22;
+	xmf3PickPosition.z = 1.0f;
+
+	XMVECTOR xmvPickPosition = XMLoadFloat3(&xmf3PickPosition);
+	XMMATRIX xmmtxView = XMLoadFloat4x4(&pCamera->m_xmf4x4View);
+
+	bool nIntersected = false;
+	float fNearestHitDistance = FLT_MAX;
+	CGameObject* pNearestObject = nullptr;
+
+	for (auto& vObject : m_mapObjects) {
+		for (auto& object : vObject.second) {
+			
+			float fHitDistance = FLT_MAX;
+			nIntersected = object->PickObjectByRayIntersection(xmvPickPosition, xmmtxView, fHitDistance);
+
+			if (nIntersected && fHitDistance < fNearestHitDistance)	{
+				fNearestHitDistance = fHitDistance;
+				pNearestObject = object;
+			}
+		}
+	}
+
+	return pNearestObject;
+}
+
+void CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMessageID)	{
+	case WM_RBUTTONDOWN:
+		break;
+	case WM_LBUTTONDOWN:
+		break;
+	case WM_LBUTTONUP:
+		break;
+	case WM_RBUTTONUP:
+		break;
+	case WM_MOUSEMOVE:
+		break;
+	default:
+		break;
+	}
+}
+
+void CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+}
+
+void CScene::Animate(float fElapsedTime)
+{
+	for (auto& vObject : m_mapObjects) {
+		for (auto& object : vObject.second) {
+			if (object->isActive())
+				object->Animate(fElapsedTime);
+		}
+	}
+
+	CheckCollision(eObjType::Bullet, eObjType::Explosive);
+}
+
+void CScene::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+{
+	CGraphicsPipeline::SetViewport(&pCamera->m_Viewport);
+	CGraphicsPipeline::SetViewPerspectiveProjectTransform(&pCamera->m_xmf4x4ViewPerspectiveProject);
+
+	std::vector<CGameObject*> cullPassed;
+	for (auto& vObj : m_mapObjects) {
+		for (auto& obj : vObj.second) {
+			if (obj->FrustumCullingTest(pCamera))
+				cullPassed.push_back(obj);
+		}
+	}
+
+	XMFLOAT4X4 viewMatrix = pCamera->GetViewMatrix();
+
+	// ∞≈∏Æ ±‚¡ÿ ∑ª¥ı∏µ º¯º≠ ¡§∑ƒ
+	std::sort(cullPassed.begin(), cullPassed.end(),
+		[&viewMatrix](const CGameObject* a, const CGameObject* b) {
+			float aZ = Vector3::TransformCoord(XMFLOAT3{}, Matrix4x4::Multiply(a->GetWorldMatrix(), viewMatrix)).z;
+			float bZ = Vector3::TransformCoord(XMFLOAT3{}, Matrix4x4::Multiply(b->GetWorldMatrix(), viewMatrix)).z;
+
+			return aZ > bZ;
+		});
+
+	for (const auto& object : cullPassed) {
+		if (object->isActive())
+			object->Render(hDCFrameBuffer, pCamera);
+	}
+}
+
+// ===============================================================
+CSceneTitle::CSceneTitle(CCamera* pCamera)
+	: CScene()
+// ===============================================================
+{
+	m_pCamera = pCamera;
+}
+
+void CSceneTitle::Animate(float fElapsedTime)
+{
+	for (auto& vObject : m_mapObjects) {
+		for (auto& object : vObject.second) {
+			if (object->isActive())
+				object->Animate(fElapsedTime);
+		}
+	}
+
+	CheckCollision(eObjType::Bullet, eObjType::Explosive);
+}
+
+void CSceneTitle::BuildObjects()
+{
+	CCubeMesh* pCubeMesh = new CCubeMesh(4.0f, 4.0f, 4.0f);
+
+	std::vector<CGameObject*> objects;
+
+	CGameObject* newObject = new CGameObject();
+	newObject->SetMesh(pCubeMesh);
+	newObject->SetColor(RGB(255, 0, 0));
+	newObject->SetPosition(-13.5f, 0.0f, +14.0f);
+	newObject->SetRotationAxis(XMFLOAT3(1.0f, 1.0f, 0.0f));
+	newObject->SetRotationSpeed(90.0f);
+	newObject->SetMovingDirection(XMFLOAT3(1.0f, 0.0f, 0.0f));
+	newObject->SetMovingSpeed(0.0f);
+	objects.push_back(newObject);
+
+	m_mapObjects.emplace(eObjType::UI, std::move(objects));
+	objects.clear();
+}
+
+void CSceneTitle::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMessageID)
+	{
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+		::SetCapture(hWnd);
+		::GetCursorPos(&oldCursorPos);
+		if (nMessageID == WM_LBUTTONDOWN && m_pCamera) {
+			CGameObject* picked = PickObjectPointedByCursor(LOWORD(lParam), HIWORD(lParam), m_pCamera);
+			for (const auto& object : m_mapObjects[eObjType::UI]) {
+				if (object == picked) {
+					OutputDebugStringW(L"Picked!\n");
+				}
+			}
+		}
+		break;
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+		::ReleaseCapture();
+		break;
+	case WM_MOUSEMOVE:
+		break;
+	default:
+		break;
+	}
+}
+
+void CSceneTitle::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMessageID) {
+	default:
+		break;
+	}
+}
+
+// ===============================================================
+CSceneStage::CSceneStage(CPlayer* player)
+	: CScene(player)
+// ===============================================================
+{
+}
+
+void CSceneStage::BuildObjects()
 {
 	CExplosiveObject::PrepareExplosion();
 
@@ -76,7 +267,7 @@ void CScene::BuildObjects()
 	m_mapObjects.emplace(eObjType::Explosive, std::move(objects));
 	objects.clear();
 
-	// Ï¥ùÏïå Ïû•Ï†Ñ
+	// √—æÀ ¿Â¿¸
 	unsigned int ammo = static_cast<CAirplanePlayer*>(m_pPlayer)->getMaxAmmo();
 	float range = static_cast<CAirplanePlayer*>(m_pPlayer)->getRange();
 
@@ -98,32 +289,16 @@ void CScene::BuildObjects()
 	objects.clear();
 }
 
-void CScene::ReleaseObjects()
-{
-}
-
-void CScene::FireBullet(CGameObject* pLockedObject)
+void CSceneStage::FireBullet(CGameObject* pLockedObject)
 {
 	static_cast<CAirplanePlayer*>(m_pPlayer)->FireBullet(pLockedObject, m_mapObjects.at(eObjType::Bullet));
 }
 
-void CScene::CheckCollision(const eObjType typeA, const eObjType typeB)
-{
-	for (auto& objectA : m_mapObjects.at(typeA)) {
-		for (auto& objectB : m_mapObjects.at(typeB)) {
-			if (objectA->isActive() && objectB->isActive() && objectA->GetOOBB().Intersects(objectB->GetOOBB())) {
-				objectA->HandleCollision(objectB, typeB);
-				objectB->HandleCollision(objectA, typeA);
-			}
-		}
-	}
-}
-
-void CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+void CSceneStage::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
 }
 
-void CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+void CSceneStage::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
 	switch (nMessageID)
 	{
@@ -150,47 +325,5 @@ void CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wPar
 		break;
 	default:
 		break;
-	}
-}
-
-void CScene::Animate(float fElapsedTime)
-{
-	for (auto& vObject : m_mapObjects) {
-		for (auto& object : vObject.second) {
-			if (object->isActive())
-				object->Animate(fElapsedTime);
-		}
-	}
-
-	CheckCollision(eObjType::Bullet, eObjType::Explosive);
-}
-
-void CScene::Render(HDC hDCFrameBuffer, CCamera* pCamera)
-{
-	CGraphicsPipeline::SetViewport(&pCamera->m_Viewport);
-	CGraphicsPipeline::SetViewPerspectiveProjectTransform(&pCamera->m_xmf4x4ViewPerspectiveProject);
-
-	std::vector<CGameObject*> cullPassed;
-	for (auto& vObj : m_mapObjects) {
-		for (auto& obj : vObj.second) {
-			if (obj->FrustumCullingTest(pCamera))
-				cullPassed.push_back(obj);
-		}
-	}
-
-	XMFLOAT4X4 viewMatrix = pCamera->GetViewMatrix();
-
-	// Í±∞Î¶¨ Í∏∞Ï§Ä Î†åÎçîÎßÅ ÏàúÏÑú Ï†ïÎ†¨
-	std::sort(cullPassed.begin(), cullPassed.end(),
-		[&viewMatrix](const CGameObject* a, const CGameObject* b) {
-			float aZ = Vector3::TransformCoord(XMFLOAT3{}, Matrix4x4::Multiply(a->GetWorldMatrix(), viewMatrix)).z;
-			float bZ = Vector3::TransformCoord(XMFLOAT3{}, Matrix4x4::Multiply(b->GetWorldMatrix(), viewMatrix)).z;
-
-			return aZ > bZ;
-		});
-
-	for (const auto& object : cullPassed) {
-		if (object->isActive())
-			object->Render(hDCFrameBuffer, pCamera);
 	}
 }

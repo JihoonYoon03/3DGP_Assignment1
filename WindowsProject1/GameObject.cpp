@@ -1,6 +1,7 @@
-ï»¿#include "framework.h"
+#include "framework.h"
 #include "GameObject.h"
 #include "GraphicsPipeline.h"
+#include "GameVar.h"
 
 std::uniform_real_distribution<float> disFloat{ -1.f, 1.f };
 
@@ -139,6 +140,29 @@ void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4
 	}
 }
 
+void CGameObject::GenerateRayForPicking(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection)
+{
+	XMMATRIX xmmtxToModel = XMMatrixInverse(NULL, XMLoadFloat4x4(&m_xmf4x4World) * xmmtxView);
+
+	XMFLOAT3 xmf3CameraOrigin(0.0f, 0.0f, 0.0f);
+	xmvPickRayOrigin = XMVector3TransformCoord(XMLoadFloat3(&xmf3CameraOrigin), xmmtxToModel);
+	xmvPickRayDirection = XMVector3TransformCoord(xmvPickPosition, xmmtxToModel);
+	xmvPickRayDirection = XMVector3Normalize(xmvPickRayDirection - xmvPickRayOrigin);
+}
+
+int CGameObject::PickObjectByRayIntersection(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, float& fHitDistance)
+{
+	bool nIntersected = false;
+
+	if (m_pMesh) {
+		XMVECTOR xmvPickRayOrigin, xmvPickRayDirection;
+		GenerateRayForPicking(xmvPickPosition, xmmtxView, xmvPickRayOrigin, xmvPickRayDirection);
+		nIntersected = m_pMesh->CheckRayIntersection(xmvPickRayOrigin, xmvPickRayDirection, fHitDistance);
+	}
+
+	return nIntersected;
+}
+
 // ===========================================================================
 CWallsObject::CWallsObject()
 // ===========================================================================
@@ -186,7 +210,7 @@ void CExplosiveObject::Animate(float fElapsedTime)
 	{
 		m_fElapsedTimes += fElapsedTime;
 
-		// íŒŒí‹°í´ lifetimeë™ì•ˆ íŒŒí‹°í´ ë³„ ë°©í–¥ìœ¼ë¡œ ì´ë™ ë° ë°©í–¥ë²¡í„° ê¸°ì¤€ íšŒì „
+		// ÆÄÆ¼Å¬ lifetimeµ¿¾È ÆÄÆ¼Å¬ º° ¹æÇâÀ¸·Î ÀÌµ¿ ¹× ¹æÇâº¤ÅÍ ±âÁØ È¸Àü
 		if (m_fElapsedTimes <= m_fDuration)	{
 			XMFLOAT3 xmf3Position = GetPosition();
 			for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
@@ -218,7 +242,7 @@ void CExplosiveObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 {
 	if (m_bBlowingUp) {
 		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
-			// TODO: íŒŒí‹°í´ ì¶œë ¥ ì‹œìŠ¤í…œ ë¶„ë¦¬
+			// TODO: ÆÄÆ¼Å¬ Ãâ·Â ½Ã½ºÅÛ ºĞ¸®
 			CGameObject::Render(hDCFrameBuffer, pCamera, &m_pxmf4x4Transforms[i], m_pExplosionMesh);
 		}
 	}
@@ -276,18 +300,18 @@ void CBulletObject::Animate(float fElapsedTime)
 
 		XMFLOAT3 xmf3LockedObjectPosition = m_pLockedObject->GetPosition();
 		XMVECTOR xmvLockedObjectPosition = XMLoadFloat3(&xmf3LockedObjectPosition);
-		// ë½ì˜¨ ëŒ€ìƒê¹Œì§€ì˜ ë°©í–¥ ë²¡í„°
+		// ¶ô¿Â ´ë»ó±îÁöÀÇ ¹æÇâ º¤ÅÍ
 		XMVECTOR xmvToLockedObject = XMVectorSubtract(xmvLockedObjectPosition, xmvPosition);
 		xmvToLockedObject = XMVector3Normalize(xmvToLockedObject);
 
 		XMVECTOR xmvMovingDirection = XMLoadFloat3(&m_xmf3MovingDirection);
-		// í˜„ì¬ ì´ë™ë°©í–¥ ë²¡í„°ì™€ ëª©í‘œë¬¼ ë°©í–¥ ë²¡í„°ë¥¼ ì„ í˜• ë³´ê°„ í›„ ì •ê·œí™”
+		// ÇöÀç ÀÌµ¿¹æÇâ º¤ÅÍ¿Í ¸ñÇ¥¹° ¹æÇâ º¤ÅÍ¸¦ ¼±Çü º¸°£ ÈÄ Á¤±ÔÈ­
 		xmvMovingDirection = XMVector3Normalize(XMVectorLerp(xmvMovingDirection, xmvToLockedObject, 0.25f));
-		// ê°±ì‹ 
+		// °»½Å
 		XMStoreFloat3(&m_xmf3MovingDirection, xmvMovingDirection);
 	}
 
-	// ì´ì•Œ íšŒì „ íš¨ê³¼
+	// ÃÑ¾Ë È¸Àü È¿°ú
 	XMFLOAT4X4 mtxRotate = Matrix4x4::RotationYawPitchRoll(0.0f, 0.0f, m_fRotationSpeed * fElapsedTime);
 	m_xmf4x4World = Matrix4x4::Multiply(mtxRotate, m_xmf4x4World);
 
@@ -299,7 +323,7 @@ void CBulletObject::Animate(float fElapsedTime)
 
 	UpdateBoundingBox();
 
-	// ì´ì•Œ ì‚¬ê±°ë¦¬ ë²—ì–´ë‚˜ê±°ë‚˜ lifetime ëì¸ ê²½ìš° ë¦¬ì…‹
+	// ÃÑ¾Ë »ç°Å¸® ¹ş¾î³ª°Å³ª lifetime ³¡ÀÎ °æ¿ì ¸®¼Â
 	if ((m_fMovingDistance > m_fBulletEffectiveRange) || (m_fElapsedTimeAfterFire > m_fLockingTime)) Reset();
 }
 

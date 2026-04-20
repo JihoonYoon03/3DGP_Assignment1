@@ -1,4 +1,4 @@
-ï»¿#include "framework.h"
+#include "framework.h"
 #include "Mesh.h"
 #include "GraphicsPipeline.h"
 #include "Camera.h"
@@ -71,7 +71,7 @@ void CMesh::LoadMeshFromObj(const WCHAR* fileName)
 			UINT i[3];
 			ss >> i[0] >> i[1] >> i[2];
 
-			// 1-based indexë¥¼ 0-basedë¡œ ë³€í™˜í•˜ì—¬ ì¸ë±ìŠ¤ ë²¡í„°ì— ì €ì¥
+			// 1-based index¸¦ 0-based·Î º¯È¯ÇÏ¿© ÀÎµ¦½º º¤ÅÍ¿¡ ÀúÀå
 			UINT idx1 = i[0] - 1;
 			UINT idx2 = i[1] - 1;
 			UINT idx3 = i[2] - 1;
@@ -90,8 +90,8 @@ void CMesh::SetMesh(std::vector<CVertex>& vertices, std::vector<UINT>& indices)
 	m_Vertices = std::move(vertices);
 	m_Indices = std::move(indices);
 
-	// ì‚¼ê°í˜• ê³„ì‚°
-	// 3ê°œ ë‹¨ìœ„ì˜ ì¸ë±ìŠ¤ê°€ ì•„ë‹Œ ê²½ìš° ì˜ˆì™¸ì²˜ë¦¬
+	// »ï°¢Çü °è»ê
+	// 3°³ ´ÜÀ§ÀÇ ÀÎµ¦½º°¡ ¾Æ´Ñ °æ¿ì ¿¹¿ÜÃ³¸®
 	if (m_Indices.size() % 3 != 0) {
 		std::wstring buf = std::format(L"Mesh Data Error :: Vertices {} / Indices {}\n", m_Vertices.size(), m_Indices.size());
 		OutputDebugStringW(buf.c_str());
@@ -116,7 +116,7 @@ void CMesh::SetMesh(std::vector<CVertex>& vertices, std::vector<UINT>& indices)
 
 void Draw2DLine(HDC hDCFrameBuffer, XMFLOAT3& f3PrevProject, XMFLOAT3& f3CurProject)
 {
-	// íˆ¬ì˜ ì¢Œí‘œê³„ 2ì ì„ í™”ë©´ ì¢Œí‘œê³„ë¡œ ë³€í™˜, ê·¸ ì ì„ ì„ ë¶„ìœ¼ë¡œ ê·¸ë¦¼
+	// Åõ¿µ ÁÂÇ¥°è 2Á¡À» È­¸é ÁÂÇ¥°è·Î º¯È¯, ±× Á¡À» ¼±ºĞÀ¸·Î ±×¸²
 	XMFLOAT3 f3Prev = CGraphicsPipeline::ScreenTransform(f3PrevProject);
 	XMFLOAT3 f3Cur = CGraphicsPipeline::ScreenTransform(f3CurProject);
 
@@ -129,22 +129,22 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 	XMFLOAT3 f3InitProject, f3PrevProject, f3Intersect;
 	bool bPrevInside = false, bInitInside = false, bCurInside = false, bIntersectInside = false;
 
-	// ì¶œë ¥í•  ì‚¼ê°í˜•ë“¤ë§Œ ì €ì¥í•˜ëŠ” ë¦¬ìŠ¤íŠ¸
+	// Ãâ·ÂÇÒ »ï°¢Çüµé¸¸ ÀúÀåÇÏ´Â ¸®½ºÆ®
 	std::vector<CTriangle*> renderList;
 
 #ifndef WIREFRAME_MODE
 
-	// ëª¨ë“  ë‹¤ê°í˜• ë Œë”ë§
+	// ¸ğµç ´Ù°¢Çü ·»´õ¸µ
 	for (auto& triangle : m_Triangles) {
 
-		// ì€ë©´ì œê±°
-		// ë§¤ì‰¬ ë¡œì»¬ ì¢Œí‘œê³„ì—ì„œ í‰ë©´ ë…¸ë©€ê³¼ ì¹´ë©”ë¼ lookì˜ ë‚´ì  ìˆ˜í–‰
+		// Àº¸éÁ¦°Å
+		// ¸Å½¬ ·ÎÄÃ ÁÂÇ¥°è¿¡¼­ Æò¸é ³ë¸Ö°ú Ä«¸Ş¶ó lookÀÇ ³»Àû ¼öÇà
 		XMVECTOR normal = XMLoadFloat3(&triangle.m_Normal);
 		XMVECTOR look = XMVectorSubtract(XMLoadFloat3(&m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position), LocalCameraPos);
 
 		if (XMVectorGetX(XMVector3Dot(normal, look)) > 0.f) continue;
 
-		// ì¹´ë©”ë¼ ì¢Œí‘œê³„ë¡œ ë¨¼ì € ë³€í™˜
+		// Ä«¸Ş¶ó ÁÂÇ¥°è·Î ¸ÕÀú º¯È¯
 		XMFLOAT4X4 viewMatrix = camera->GetViewMatrix();
 
 		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::WorldViewTransform(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position, viewMatrix);
@@ -153,24 +153,24 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 
 		triangle.m_averageZ = (f3CurProject1.z + f3CurProject2.z + f3CurProject3.z) / 3;
 
-		// ì¹´ë©”ë¼ ë’¤ì— ìˆë‹¤ë©´ ì»¬ë§
+		// Ä«¸Ş¶ó µÚ¿¡ ÀÖ´Ù¸é ÄÃ¸µ
 		/*if (f3CurProject1.z < 0.f || f3CurProject2.z < 0.f || f3CurProject3.z < 0.f) {
-			OutputDebugStringW(std::wstring{ L"ì¹´ë©”ë¼ ë’¤ë¡œ ë„˜ì–´ê° ì²´í‚¹\n" }.c_str());
+			OutputDebugStringW(std::wstring{ L"Ä«¸Ş¶ó µÚ·Î ³Ñ¾î°¨ Ã¼Å·\n" }.c_str());
 			continue;
 		}*/
 
-		// ë Œë” ëŒ€ìƒ ë¦¬ìŠ¤íŠ¸ì— í•´ë‹¹ ì‚¼ê°í˜• ì €ì¥
+		// ·»´õ ´ë»ó ¸®½ºÆ®¿¡ ÇØ´ç »ï°¢Çü ÀúÀå
 		renderList.push_back(&triangle);
 	}
 
-	// zì¢Œí‘œ ê¸°ì¤€ ë‚´ë¦¼ì°¨ìˆœ ì •ë ¬, ë¨¼ ê²ƒë¶€í„° ë Œë”ë§
+	// zÁÂÇ¥ ±âÁØ ³»¸²Â÷¼ø Á¤·Ä, ¸Õ °ÍºÎÅÍ ·»´õ¸µ
 	std::sort(renderList.begin(), renderList.end(), [](const CTriangle* a, const CTriangle* b) {
 		return a->m_averageZ > b->m_averageZ;
 		});
 
-	for (const auto* triangle : renderList)	{
+	for (const auto* triangle : renderList) {
 
-		// ëª¨ë“  ì •ì  ì›ê·¼ íˆ¬ì˜ ë³€í™˜ ë° ë Œë”ë§
+		// ¸ğµç Á¤Á¡ ¿ø±Ù Åõ¿µ º¯È¯ ¹× ·»´õ¸µ
 		XMFLOAT4X4 PerspectiveProject = camera->GetPerspectiveProjectMatrix();
 
 		XMFLOAT3 f3CurProject1 = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle->m_StartIndex]].m_xmf3Position);
@@ -191,11 +191,11 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 	}
 
 #else
-	// ëª¨ë“  ë‹¤ê°í˜• ë Œë”ë§
+	// ¸ğµç ´Ù°¢Çü ·»´õ¸µ
 	for (const auto& triangle : m_Triangles) {
-		
-		// ì€ë©´ì œê±°
-		// ë§¤ì‰¬ ë¡œì»¬ ì¢Œí‘œê³„ì—ì„œ í‰ë©´ ë…¸ë©€ê³¼ ì¹´ë©”ë¼ lookì˜ ë‚´ì  ìˆ˜í–‰
+
+		// Àº¸éÁ¦°Å
+		// ¸Å½¬ ·ÎÄÃ ÁÂÇ¥°è¿¡¼­ Æò¸é ³ë¸Ö°ú Ä«¸Ş¶ó lookÀÇ ³»Àû ¼öÇà
 		XMVECTOR normal = XMLoadFloat3(&triangle.m_Normal);
 		XMVECTOR look = XMVectorSubtract(XMLoadFloat3(&m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position), LocalCameraPos);
 
@@ -203,12 +203,12 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 
 		f3PrevProject = f3InitProject = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position);
 		bPrevInside = bInitInside = (-1.0f <= f3InitProject.x) && (f3InitProject.x <= 1.0f) &&
-									(-1.0f <= f3InitProject.y) && (f3InitProject.y <= 1.0f);
+			(-1.0f <= f3InitProject.y) && (f3InitProject.y <= 1.0f);
 
-		for (int i = 1; i < 3; ++i)	{
+		for (int i = 1; i < 3; ++i) {
 			XMFLOAT3 f3CurrentProject = CGraphicsPipeline::Project(m_Vertices[m_Indices[triangle.m_StartIndex + i]].m_xmf3Position);
-			bCurInside =	(-1.0f <= f3CurrentProject.x) && (f3CurrentProject.x <= 1.0f) &&
-							(-1.0f <= f3CurrentProject.y) && (f3CurrentProject.y <= 1.0f);
+			bCurInside = (-1.0f <= f3CurrentProject.x) && (f3CurrentProject.x <= 1.0f) &&
+				(-1.0f <= f3CurrentProject.y) && (f3CurrentProject.y <= 1.0f);
 
 			if (((0.0f <= f3CurrentProject.z) && (f3CurrentProject.z <= 1.0f)) && ((bCurInside || bPrevInside)))
 				::Draw2DLine(hDCFrameBuffer, f3PrevProject, f3CurrentProject);
@@ -222,6 +222,39 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 #endif
 }
 
+bool CMesh::RayIntersectionByTriangle(XMVECTOR& xmRayOrigin, XMVECTOR& xmRayDirection, XMVECTOR v0, XMVECTOR v1, XMVECTOR v2, float& fNearHitDistance)
+{
+	float fHitDistance;
+	bool bIntersected = TriangleTests::Intersects(xmRayOrigin, xmRayDirection, v0, v1, v2, fHitDistance);
+	if (bIntersected && (fHitDistance < fNearHitDistance)) 
+		fNearHitDistance = fHitDistance;
+
+	return bIntersected;
+}
+
+bool CMesh::CheckRayIntersection(XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection, float& fNearHitDistance)
+{
+	bool nIntersections = false;
+	// 1Â÷ °Ë»ç
+	bool bIntersected = m_xmOOBB.Intersects(xmvPickRayOrigin, xmvPickRayDirection, fNearHitDistance);
+
+	// Á¤¹Ğ °Ë»ç
+	if (bIntersected) {
+		for (const auto& triangle : m_Triangles) {
+			XMVECTOR v0 = XMLoadFloat3(&(m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position));
+			XMVECTOR v1 = XMLoadFloat3(&(m_Vertices[m_Indices[triangle.m_StartIndex + 1]].m_xmf3Position));
+			XMVECTOR v2 = XMLoadFloat3(&(m_Vertices[m_Indices[triangle.m_StartIndex + 2]].m_xmf3Position));
+			BOOL bIntersected = RayIntersectionByTriangle(xmvPickRayOrigin, xmvPickRayDirection, v0, v1, v2, fNearHitDistance);
+			if (bIntersected) {
+				nIntersections = true;
+				break;
+			}
+		}
+	}
+
+	return nIntersections;
+}
+
 // ========================================================
 CCubeMesh::CCubeMesh(float fWidth, float fHeight, float fDepth)
 // ========================================================
@@ -231,37 +264,37 @@ CCubeMesh::CCubeMesh(float fWidth, float fHeight, float fDepth)
 	float fHalfDepth = fDepth * 0.5f;
 
 	std::vector<CVertex> vertices = {
-		// ì•
+		// ¾Õ
 		{ -fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, -fHalfDepth },
 		{ -fHalfWidth, -fHalfHeight, -fHalfDepth },
 
-		// ìœ„
+		// À§
 		{ -fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ -fHalfWidth, +fHalfHeight, -fHalfDepth },
 
-		// ë’¤
+		// µÚ
 		{ -fHalfWidth, -fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ -fHalfWidth, +fHalfHeight, +fHalfDepth },
 
-		// ë°”ë‹¥
+		// ¹Ù´Ú
 		{ -fHalfWidth, -fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, +fHalfDepth },
 		{ -fHalfWidth, -fHalfHeight, +fHalfDepth },
 
-		// ì¢Œ
+		// ÁÂ
 		{ -fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ -fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ -fHalfWidth, -fHalfHeight, -fHalfDepth },
 		{ -fHalfWidth, -fHalfHeight, +fHalfDepth },
 
-		// ìš°
+		// ¿ì
 		{ +fHalfWidth, +fHalfHeight, -fHalfDepth },
 		{ +fHalfWidth, +fHalfHeight, +fHalfDepth },
 		{ +fHalfWidth, -fHalfHeight, +fHalfDepth },
@@ -269,22 +302,22 @@ CCubeMesh::CCubeMesh(float fWidth, float fHeight, float fDepth)
 	};
 
 	std::vector<UINT> indices = {
-		// ì•
+		// ¾Õ
 		0, 1, 2, 0, 2, 3,
 
-		// ìœ„
+		// À§
 		4, 5, 6, 4, 6, 7,
 
-		// ë’¤
+		// µÚ
 		8, 9, 10, 8, 10, 11,
 
-		// ë°”ë‹¥
+		// ¹Ù´Ú
 		12, 13, 14, 12, 14, 15,
 
-		// ì¢Œ
+		// ÁÂ
 		16, 17, 18, 16, 18, 19,
 
-		// ìš°
+		// ¿ì
 		20, 21, 22, 20, 22, 23
 	};
 
@@ -311,12 +344,12 @@ CWallMesh::CWallMesh(float fWidth, float fHeight, float fDepth, int nSubRects)
 	std::vector<CVertex> vertices;
 	std::vector<UINT> indices;
 
-	// ì´ ì‚¬ê°í˜• ê°œìˆ˜ = (ì™¼ìª½, ì˜¤ë¥¸ìª½, ìœ„, ì•„ë˜) + (ì•, ë’¤)
+	// ÃÑ »ç°¢Çü °³¼ö = (¿ŞÂÊ, ¿À¸¥ÂÊ, À§, ¾Æ·¡) + (¾Õ, µÚ)
 	int nTotalQuads = (4 * nSubRects * nSubRects) + 2;
 	vertices.reserve(nTotalQuads * 4);
 	indices.reserve(nTotalQuads * 6);
 
-	// ì‚¬ê°í˜•ì„ 2ê°œì˜ ì‚¼ê°í˜• ë‹¨ìœ„ë¡œ ë‚˜ëˆ„ì–´ ì¸ë±ìŠ¤ì™€ ì •ì ì„ ì¶”ê°€
+	// »ç°¢ÇüÀ» 2°³ÀÇ »ï°¢Çü ´ÜÀ§·Î ³ª´©¾î ÀÎµ¦½º¿Í Á¤Á¡À» Ãß°¡
 	auto AddQuad = [&](const CVertex& v0, const CVertex& v1, const CVertex& v2, const CVertex& v3) {
 		UINT startIndex = static_cast<UINT>(vertices.size());
 		vertices.push_back(v0);
@@ -324,12 +357,12 @@ CWallMesh::CWallMesh(float fWidth, float fHeight, float fDepth, int nSubRects)
 		vertices.push_back(v2);
 		vertices.push_back(v3);
 
-		// ì‚¼ê°í˜• 1 (0, 1, 2)
+		// »ï°¢Çü 1 (0, 1, 2)
 		indices.push_back(startIndex + 0);
 		indices.push_back(startIndex + 1);
 		indices.push_back(startIndex + 2);
 
-		// ì‚¼ê°í˜• 2 (0, 2, 3)
+		// »ï°¢Çü 2 (0, 2, 3)
 		indices.push_back(startIndex + 0);
 		indices.push_back(startIndex + 2);
 		indices.push_back(startIndex + 3);
@@ -403,9 +436,9 @@ CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth)
 	float x1 = fx * 0.2f, y1 = fy * 0.2f, x2 = fx * 0.1f, y3 = fy * 0.3f, y2 = ((y1 - (fy - y3)) / x1) * x2 + (fy - y3);
 	int i = 0;
 
-	// ì´ 16ê°œì˜ ê³ ìœ  ì •ì  ë°°ì—´ ì •ì˜
+	// ÃÑ 16°³ÀÇ °íÀ¯ Á¤Á¡ ¹è¿­ Á¤ÀÇ
 	std::vector<CVertex> vertices = {
-		// ì•ë©´ (-fz) : ì¸ë±ìŠ¤ 0 ~ 7
+		// ¾Õ¸é (-fz) : ÀÎµ¦½º 0 ~ 7
 		{  0.0f, +(fy + y3), -fz }, // 0
 		{  0.0f, 0.0f,       -fz }, // 1
 		{   +x1, -y1,        -fz }, // 2
@@ -415,7 +448,7 @@ CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth)
 		{   -x2, +y2,        -fz }, // 6
 		{   -fx, -y3,        -fz }, // 7
 
-		// ë’·ë©´ (+fz) : ì¸ë±ìŠ¤ 8 ~ 15
+		// µŞ¸é (+fz) : ÀÎµ¦½º 8 ~ 15
 		{  0.0f, +(fy + y3), +fz }, // 8
 		{  0.0f, 0.0f,       +fz }, // 9
 		{   +x1, -y1,        +fz }, // 10
@@ -465,7 +498,7 @@ CAirplaneMesh::CAirplaneMesh(float fWidth, float fHeight, float fDepth)
 	};
 
 	SetMesh(vertices, indices);
-	
+
 	m_xmOOBB = BoundingOrientedBox(XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(fx, fy, fz), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 

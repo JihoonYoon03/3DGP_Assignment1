@@ -1,4 +1,4 @@
-ï»¿#pragma once
+#pragma once
 
 #include "Mesh.h"
 #include "Camera.h"
@@ -43,6 +43,9 @@ public:
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh);
 
+	void GenerateRayForPicking(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection);
+	int PickObjectByRayIntersection(XMVECTOR& xmPickPosition, XMMATRIX& xmmtxView, float& pfHitDistance);
+
 	virtual void HandleCollision(CGameObject* objCollided, const eObjType objType) {}
 
 	XMFLOAT3 GetPosition();
@@ -62,13 +65,13 @@ protected:
 	XMFLOAT3					m_xmf3RotationAxis = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	float						m_fRotationSpeed = 0.0f;
 
-	// ëª¨ì–‘(ë©”ì‰¬/ëª¨ë¸)
+	// ¸ğ¾ç(¸Ş½¬/¸ğµ¨)
 	CMesh*						m_pMesh = nullptr;
 
 	BoundingOrientedBox			m_xmOOBB = BoundingOrientedBox();
 	CGameObject*				m_pObjectCollided = nullptr;
 
-	// ê²Œì„ ê°ì²´ì˜ ìƒ‰ìƒì´ë‹¤.
+	// °ÔÀÓ °´Ã¼ÀÇ »ö»óÀÌ´Ù.
 	DWORD						m_dwColor = RGB(255, 0, 0);
 
 	HPEN hPen = NULL;

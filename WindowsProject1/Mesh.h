@@ -1,17 +1,4 @@
-Ôªø#pragma once
-
-/*// == XMFLOAT3
-class CPoint3D {
-public:
-	CPoint3D() {}
-	CPoint3D(float x, float y, float z) : x{ x }, y{ y }, z{ z } {}
-	virtual ~CPoint3D() {}
-
-	float x = 0.f;
-	float y = 0.f;
-	float z = 0.f;
-};
-*/
+#pragma once
 
 class CVertex {
 public:
@@ -28,7 +15,7 @@ public:
 	CTriangle(const UINT& index) : m_StartIndex(index) {}
 	virtual ~CTriangle() {}
 
-	UINT			m_StartIndex = 0;
+	UINT				m_StartIndex = 0;
 	XMFLOAT3			m_Normal{};
 	float				m_averageZ = 0;
 
@@ -46,6 +33,9 @@ public:
 	
 	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera, const XMVECTOR& LocalCameraPos);
 
+	bool RayIntersectionByTriangle(XMVECTOR& xmRayOrigin, XMVECTOR& xmRayDirection, XMVECTOR v0, XMVECTOR v1, XMVECTOR v2, float& fNearHitDistance);
+	bool CheckRayIntersection(XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection, float& fNearHitDistance);
+
 	void AddRef() { m_nReferences++; }
 	void Release();
 	
@@ -54,16 +44,16 @@ public:
 private:
 	int m_nReferences = 1;
 	
-	// raw Îç∞Ïù¥ÌÑ∞ (Ï†ïÏ†ê, Ïù∏Îç±Ïä§)
+	// raw µ•¿Ã≈Õ (¡§¡°, ¿Œµ¶Ω∫)
 	std::vector<CVertex>	m_Vertices;
-	std::vector<UINT>	m_Indices;
+	std::vector<UINT>		m_Indices;
 
-	// ÌèâÎ©¥ Îç∞Ïù¥ÌÑ∞ (Ïù∏Îç±Ïä§ ÏúÑÏπò, ÎÖ∏Î©Ä)
+	// ∆Ú∏È µ•¿Ã≈Õ (¿Œµ¶Ω∫ ¿ßƒ°, ≥Î∏÷)
 	std::vector<CTriangle>	m_Triangles;
 
-	// ÏµúÏ¢ÖÏ†ÅÏúºÎ°ú Í∑∏Î†§ÎÇº Ï†ïÏ†ê Î™®ÏûÑ
-	size_t m_nDrawingPoints = 0;
-	std::vector<POINT> m_vDrawingPoints;
+	// √÷¡æ¿˚¿∏∑Œ ±◊∑¡≥æ ¡§¡° ∏¿”
+	size_t					m_nDrawingPoints = 0;
+	std::vector<POINT>		m_vDrawingPoints;
 };
 
 class CCubeMesh : public CMesh {

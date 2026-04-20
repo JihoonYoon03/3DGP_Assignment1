@@ -1,18 +1,16 @@
-ï»¿#include "framework.h"
+#include "framework.h"
 #include "GameFramework.h"
-
-std::random_device rd;
-std::mt19937 rde{ rd() };
+#include "GameVar.h"
 
 void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 {
 	m_hInstance = hInstance;
 	m_hWnd = hMainWnd;
 	
-	// ë Œë”ë§ í™”ë©´ì„ ìƒì„±í•œë‹¤.
+	// ·»´õ¸µ È­¸éÀ» »ý¼ºÇÑ´Ù.
 	BuildFrameBuffer();
 	
-	// í”Œë ˆì´ì–´ì™€ ê²Œìž„ ì„¸ê³„(ì”¬)ì„ ìƒì„±í•œë‹¤.
+	// ÇÃ·¹ÀÌ¾î¿Í °ÔÀÓ ¼¼°è(¾À)À» »ý¼ºÇÑ´Ù.
 	BuildObjects();
 
 	m_pszFrameRate = L"LabProject (";
@@ -92,35 +90,34 @@ void CGameFramework::BuildObjects()
 	m_pPlayer->SetCamera(pCamera);
 	m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 5.0f, -15.0f));
 
-	m_pScene = new CScene(m_pPlayer);
-	m_pScene->BuildObjects();
+	m_pSceneTitle = std::make_shared<CSceneTitle>(pCamera);
+	m_pSceneStage = std::make_shared<CSceneStage>(m_pPlayer);
+	m_pSceneTitle->BuildObjects();
+	m_pSceneStage->BuildObjects();
+
+	m_pCurrentScene = m_pSceneTitle;
 }
 void CGameFramework::ReleaseObjects()
 {
-	// ì”¬ ê°ì²´ì˜ ê²Œìž„ ê°ì²´ë“¤ì„ ì†Œë©¸í•˜ê³ , ì”¬ ê°ì²´ì™€ í”Œë ˆì´ì–´ ê°ì²´ë¥¼ ì†Œë©¸í•œë‹¤.
-	if (m_pScene) {
-		m_pScene->ReleaseObjects();
-		delete m_pScene;
-	}
-
 	if (m_pPlayer) delete m_pPlayer;
 }
 
 void CGameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
-	if (m_pScene) m_pScene->OnProcessingMouseMessage(hWnd, nMessageID, wParam, lParam);
+	if (m_pCurrentScene)
+		m_pCurrentScene->OnProcessingMouseMessage(hWnd, nMessageID, wParam, lParam);
 
 	switch (nMessageID)
 	{
 	case WM_RBUTTONDOWN:
 	case WM_LBUTTONDOWN:
 		::SetCapture(hWnd);
-		::GetCursorPos(&m_ptOldCursorPos);
+		::GetCursorPos(&oldCursorPos);
 		if (nMessageID == WM_LBUTTONDOWN) {
-			m_pScene->FireBullet(m_pLockedObject);
+			m_pCurrentScene->FireBullet(m_pLockedObject);
 			m_pLockedObject = nullptr;
 		}
-		//if (nMessageID == WM_RBUTTONDOWN) m_pLockedObject = m_pScene->PickObjectPointedByCursor(LOWORD(lParam), HIWORD(lParam), m_pPlayer->m_pCamera);
+		//if (nMessageID == WM_RBUTTONDOWN) m_pLockedObject = m_pCurrentScene->PickObjectPointedByCursor(LOWORD(lParam), HIWORD(lParam), m_pPlayer->m_pCamera);
 		break;
 	case WM_LBUTTONUP:
 	case WM_RBUTTONUP:
@@ -135,7 +132,8 @@ void CGameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM
 
 void CGameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
-	if (m_pScene) m_pScene->OnProcessingKeyboardMessage(hWnd, nMessageID, wParam, lParam);
+	if (m_pCurrentScene)
+		m_pCurrentScene->OnProcessingKeyboardMessage(hWnd, nMessageID, wParam, lParam);
 
 	switch (nMessageID)
 	{
@@ -150,7 +148,7 @@ void CGameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPA
 		case VK_CONTROL:
 			break;
 		default:
-			m_pScene->OnProcessingKeyboardMessage(hWnd, nMessageID, wParam, lParam);
+			m_pCurrentScene->OnProcessingKeyboardMessage(hWnd, nMessageID, wParam, lParam);
 			break;
 		}
 		break;
@@ -209,9 +207,9 @@ void CGameFramework::ProcessInput()
 		SetCursor(NULL);
 		POINT ptCursorPos;
 		GetCursorPos(&ptCursorPos);
-		float cxMouseDelta = (float)(ptCursorPos.x - m_ptOldCursorPos.x) / 3.0f;
-		float cyMouseDelta = (float)(ptCursorPos.y - m_ptOldCursorPos.y) / 3.0f;
-		SetCursorPos(m_ptOldCursorPos.x, m_ptOldCursorPos.y);
+		float cxMouseDelta = (float)(ptCursorPos.x - oldCursorPos.x) / 3.0f;
+		float cyMouseDelta = (float)(ptCursorPos.y - oldCursorPos.y) / 3.0f;
+		SetCursorPos(oldCursorPos.x, oldCursorPos.y);
 		if (cxMouseDelta || cyMouseDelta)
 		{
 			if (pKeyBuffer[VK_RBUTTON] & 0xF0)
@@ -227,8 +225,8 @@ void CGameFramework::ProcessInput()
 void CGameFramework::AnimateObjects()
 {
 	float fTimeElapsed = m_GameTimer.GetTimeElapsed();
-	//if (m_pPlayer) m_pPlayer->Animate(fTimeElapsed);
-	if (m_pScene) m_pScene->Animate(fTimeElapsed);
+	if (m_pCurrentScene) 
+		m_pCurrentScene->Animate(fTimeElapsed);
 }
 
 void CGameFramework::FrameAdvance()
@@ -242,9 +240,8 @@ void CGameFramework::FrameAdvance()
 	ClearFrameBuffer(RGB(75, 45, 105));
 
 	CCamera* pCamera = m_pPlayer->GetCamera();
-	if (m_pScene) m_pScene->Render(m_hDCFrameBuffer, pCamera);
-
-	//if (m_pPlayer) m_pPlayer->Render(m_hDCFrameBuffer, pCamera);
+	if (m_pCurrentScene)
+		m_pCurrentScene->Render(m_hDCFrameBuffer, pCamera);
 
 	PresentFrameBuffer();
 
