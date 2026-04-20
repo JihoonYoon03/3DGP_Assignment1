@@ -20,6 +20,8 @@ public:
 	void ClearFrameBuffer(DWORD dwColor);
 	void PresentFrameBuffer();
 
+	void BuildTextBuffer();
+
 	// 렌더링할 메쉬와 게임 객체를 생성하고 소멸하는 함수이다. 
 	void BuildObjects();
 	void ReleaseObjects();
@@ -48,7 +50,9 @@ private:
 
 	// 렌더링의 대상이 되는 화면에 해당하는 비트맵과 비트맵 디바이스 컨텍스트(Device Context)이다. 
 	HDC			m_hDCFrameBuffer = NULL;
+	HDC			m_hDCTextBuffer = NULL;
 	HBITMAP		m_hBitmapFrameBuffer = NULL;
+	HBITMAP		m_hBitmapTextBuffer = NULL;
 	HBITMAP		m_hBitmapSelect = NULL;
 
 

@@ -9,6 +9,9 @@ void CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	
 	// 렌더링 화면을 생성한다.
 	BuildFrameBuffer();
+
+	// 텍스트 출력용 버퍼 생성
+	BuildTextBuffer();
 	
 	// 플레이어와 게임 세계(씬)을 생성한다.
 	BuildObjects();
@@ -21,6 +24,8 @@ void CGameFramework::OnDestroy()
 	ReleaseObjects();
 	if (m_hBitmapFrameBuffer) ::DeleteObject(m_hBitmapFrameBuffer);
 	if (m_hDCFrameBuffer) ::DeleteDC(m_hDCFrameBuffer);
+	if (m_hBitmapTextBuffer) ::DeleteObject(m_hBitmapTextBuffer);
+	if (m_hDCTextBuffer) ::DeleteDC(m_hDCTextBuffer);
 }
 
 void CGameFramework::BuildFrameBuffer()
@@ -72,6 +77,29 @@ void CGameFramework::PresentFrameBuffer()
 	::ReleaseDC(m_hWnd, hDC);
 }
 
+void CGameFramework::BuildTextBuffer()
+{
+	::GetClientRect(m_hWnd, &m_rcClient);
+
+	HDC hDC = ::GetDC(m_hWnd);
+
+	m_hDCTextBuffer = ::CreateCompatibleDC(hDC);
+	m_hBitmapTextBuffer =
+		::CreateCompatibleBitmap(hDC,
+			m_rcClient.right - m_rcClient.left,
+			m_rcClient.bottom - m_rcClient.top);
+
+	::SelectObject(m_hDCTextBuffer, m_hBitmapTextBuffer);
+
+	::ReleaseDC(m_hWnd, hDC);
+	::SetBkMode(m_hDCTextBuffer, TRANSPARENT);
+
+	SetTextColor(m_hDCTextBuffer, RGB(255, 255, 255)); // 흰색 글씨
+	std::wstring out = L"Fighter Jet";
+	RECT rc = m_rcClient;
+	::DrawText(m_hDCTextBuffer, out.c_str(), -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+}
+
 void CGameFramework::BuildObjects()
 {
 	CCamera* pCamera = new CCamera();
@@ -86,7 +114,7 @@ void CGameFramework::BuildObjects()
 	m_pPlayer = new CAirplanePlayer();
 	m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
 	m_pPlayer->SetMesh(pAirplaneMesh);
-	m_pPlayer->SetColor(RGB(0, 0, 255));
+	m_pPlayer->SetColor(RGB(60, 60, 70));
 	m_pPlayer->SetCamera(pCamera);
 	m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 5.0f, -15.0f));
 
@@ -237,11 +265,23 @@ void CGameFramework::FrameAdvance()
 
 	AnimateObjects();
 
-	ClearFrameBuffer(RGB(75, 45, 105));
+	ClearFrameBuffer(RGB(108, 175, 220));
 
 	CCamera* pCamera = m_pPlayer->GetCamera();
-	if (m_pCurrentScene)
+	if (m_pCurrentScene) {
 		m_pCurrentScene->Render(m_hDCFrameBuffer, pCamera);
+
+		if (dynamic_cast<CSceneTitle*>(m_pCurrentScene.get())) {
+			::TransparentBlt(
+				m_hDCFrameBuffer,
+				0, 0,
+				m_rcClient.right, m_rcClient.bottom,
+				m_hDCTextBuffer,
+				0, 0,
+				m_rcClient.right, m_rcClient.bottom,
+				RGB(0, 0, 0));
+		}
+	}
 
 	PresentFrameBuffer();
 

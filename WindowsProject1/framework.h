@@ -25,6 +25,7 @@
 // 간단한 사운드 출력, 시스템 시간 확인용 (Multimedia system)
 #include <Mmsystem.h>
 #pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "msimg32.lib")
 
 // DX 관련 헤더 파일
 #include <DirectXMath.h>
