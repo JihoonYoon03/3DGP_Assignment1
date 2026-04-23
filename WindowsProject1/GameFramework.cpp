@@ -113,7 +113,7 @@ void CGameFramework::BuildObjects()
 
 	pCamera->GenerateOrthographicProjectionMatrix(1.01f, 50.0f, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
 
-	CMesh* pAirplaneMesh = new CMesh(L"../Resources/Obj/LowPolyF22.obj", 0.05f);
+	CMesh* pAirplaneMesh = new CMesh(L"../Resources/F22_low.obj", 2.0f);
 
 	m_pPlayer = new CAirplanePlayer();
 	m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
@@ -221,37 +221,7 @@ LRESULT CALLBACK CGameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMess
 void CGameFramework::ProcessInput()
 {
 	static UCHAR pKeyBuffer[256];
-	if (GetKeyboardState(pKeyBuffer))
-	{
-		DWORD dwDirection = 0;
-		if (pKeyBuffer['W'] & 0xF0) dwDirection |= DIR_FORWARD;
-		if (pKeyBuffer['S'] & 0xF0) dwDirection |= DIR_BACKWARD;
-		if (pKeyBuffer['A'] & 0xF0) dwDirection |= DIR_LEFT;
-		if (pKeyBuffer['D'] & 0xF0) dwDirection |= DIR_RIGHT;
-		if (pKeyBuffer[VK_SPACE] & 0xF0) dwDirection |= DIR_UP;
-		if (pKeyBuffer[VK_CONTROL] & 0xF0) dwDirection |= DIR_DOWN;
-
-		if (dwDirection) m_pPlayer->Move(dwDirection, 0.15f);
-	}
-
-	if (GetCapture() == m_hWnd)
-	{
-		SetCursor(NULL);
-		POINT ptCursorPos;
-		GetCursorPos(&ptCursorPos);
-		float cxMouseDelta = (float)(ptCursorPos.x - oldCursorPos.x) / 3.0f;
-		float cyMouseDelta = (float)(ptCursorPos.y - oldCursorPos.y) / 3.0f;
-		SetCursorPos(oldCursorPos.x, oldCursorPos.y);
-		if (cxMouseDelta || cyMouseDelta)
-		{
-			if (pKeyBuffer[VK_RBUTTON] & 0xF0)
-				m_pPlayer->Rotate(cyMouseDelta, 0.0f, -cxMouseDelta);
-			else
-				m_pPlayer->Rotate(cyMouseDelta, cxMouseDelta, 0.0f);
-		}
-	}
-
-	m_pPlayer->Update(m_GameTimer.GetTimeElapsed());
+	m_pCurrentScene->ProcessInput(m_hWnd, pKeyBuffer, m_GameTimer);
 }
 
 void CGameFramework::AnimateObjects()

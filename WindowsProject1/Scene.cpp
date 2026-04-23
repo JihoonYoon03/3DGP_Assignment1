@@ -3,6 +3,7 @@
 #include "GraphicsPipeline.h"
 #include "Player.h"
 #include "GameVar.h"
+#include "Timer.h"
 
 CScene::CScene(CPlayer* pPlayer)
 {
@@ -144,7 +145,7 @@ void CSceneTitle::Animate(float fElapsedTime)
 
 void CSceneTitle::BuildObjects()
 {
-	CMesh* pAirplaneMesh = new CMesh(L"../Resources/Obj/LowPolyF22.obj", 0.05f);
+	CMesh* pAirplaneMesh = new CMesh(L"../Resources/F22_low.obj", 2.0f);
 	CCubeMesh* cubeMesh = new CCubeMesh(1.5f, 1.5f, 1.5f);
 
 	std::vector<CGameObject*> objects;
@@ -152,12 +153,9 @@ void CSceneTitle::BuildObjects()
 	CUIObject* newObject = new CUIObject();
 	newObject->SetMesh(pAirplaneMesh);
 	newObject->SetColor(RGB(60, 60, 70));
-	newObject->SetPosition(0.0f, 0.0f, 0.0f);
-	newObject->SetWorldMatrix(Matrix4x4::RotationYawPitchRoll(0.f, -90.f, 90.f));
-	newObject->SetRotationAxis(XMFLOAT3(1.0f, 0.0f, 0.0f));
-	newObject->SetRotationSpeed(90.0f);
-	newObject->SetMovingDirection(XMFLOAT3(1.0f, 0.0f, 0.0f));
-	newObject->SetMovingSpeed(0.0f);
+	newObject->SetPosition(0.0f, 1.0f, 0.0f);
+	newObject->SetRotationAxis(XMFLOAT3(0.0f, 1.0f, 0.0f));
+	//newObject->SetRotationSpeed(90.0f);
 	objects.push_back(newObject);
 
 	newObject = new CUIObject();
@@ -167,6 +165,7 @@ void CSceneTitle::BuildObjects()
 	newObject->SetRotationAxis(XMFLOAT3(0.f, 1.f, 0.f));
 	newObject->SetRotationSpeed(-20.0f);
 	newObject->LookAt(m_pCamera->GetPosition(), XMFLOAT3(0.f, 1.f, 0.f ));
+	newObject->setCheckMouseHover(true);
 	objects.push_back(newObject);
 
 	m_mapObjects.emplace(eObjType::UI, std::move(objects));
@@ -177,20 +176,31 @@ void CSceneTitle::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wP
 {
 	switch (nMessageID)
 	{
+	case WM_MOUSEMOVE:
 	case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN:
+	case WM_RBUTTONDOWN: 
+	{
 		::SetCapture(hWnd);
 		::GetCursorPos(&oldCursorPos);
-		if (nMessageID == WM_LBUTTONDOWN && m_pCamera) {
-			CGameObject* picked = PickObjectPointedByCursor(LOWORD(lParam), HIWORD(lParam), m_pCamera);
-			if (picked)	picked->EventPicking();
+		CGameObject* hovered = PickObjectPointedByCursor(LOWORD(lParam), HIWORD(lParam), m_pCamera);
+		if (hovered) {
+			if (nMessageID == WM_LBUTTONDOWN && m_pCamera) {
+				hovered->EventPicking();
+			}
+			else {
+				static_cast<CUIObject*>(hovered)->EventBeginMouseHovering();
+			}
 		}
+		else {
+			for (auto& obj : m_mapObjects.at(eObjType::UI)) {
+				static_cast<CUIObject*>(obj)->EventEndMouseHovering();
+			}
+		}
+	}
 		break;
 	case WM_LBUTTONUP:
 	case WM_RBUTTONUP:
 		::ReleaseCapture();
-		break;
-	case WM_MOUSEMOVE:
 		break;
 	default:
 		break;
@@ -333,4 +343,39 @@ void CSceneStage::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM
 	default:
 		break;
 	}
+}
+
+void CSceneStage::ProcessInput(HWND& hWnd, UCHAR* pKeyBuffer, CGameTimer& timer)
+{
+	if (GetKeyboardState(pKeyBuffer))
+	{
+		DWORD dwDirection = 0;
+		if (pKeyBuffer['W'] & 0xF0) dwDirection |= DIR_FORWARD;
+		if (pKeyBuffer['S'] & 0xF0) dwDirection |= DIR_BACKWARD;
+		if (pKeyBuffer['A'] & 0xF0) dwDirection |= DIR_LEFT;
+		if (pKeyBuffer['D'] & 0xF0) dwDirection |= DIR_RIGHT;
+		if (pKeyBuffer[VK_SPACE] & 0xF0) dwDirection |= DIR_UP;
+		if (pKeyBuffer[VK_CONTROL] & 0xF0) dwDirection |= DIR_DOWN;
+
+		if (dwDirection) m_pPlayer->Move(dwDirection, 0.15f);
+	}
+
+	if (GetCapture() == hWnd)
+	{
+		SetCursor(NULL);
+		POINT ptCursorPos;
+		GetCursorPos(&ptCursorPos);
+		float cxMouseDelta = (float)(ptCursorPos.x - oldCursorPos.x) / 3.0f;
+		float cyMouseDelta = (float)(ptCursorPos.y - oldCursorPos.y) / 3.0f;
+		SetCursorPos(oldCursorPos.x, oldCursorPos.y);
+		if (cxMouseDelta || cyMouseDelta)
+		{
+			if (pKeyBuffer[VK_RBUTTON] & 0xF0)
+				m_pPlayer->Rotate(cyMouseDelta, 0.0f, -cxMouseDelta);
+			else
+				m_pPlayer->Rotate(cyMouseDelta, cxMouseDelta, 0.0f);
+		}
+	}
+
+	m_pPlayer->Update(timer.GetTimeElapsed());
 }

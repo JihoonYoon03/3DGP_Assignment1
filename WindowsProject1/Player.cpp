@@ -1,4 +1,4 @@
-ï»¿#include "framework.h"
+#include "framework.h"
 #include "Player.h"
 
 CPlayer::~CPlayer()
@@ -9,14 +9,14 @@ CPlayer::~CPlayer()
 
 void CPlayer::SetPosition(float x, float y, float z)
 {
-	// í”Œë ˆì´ì–´ ê°ì²´ì˜ ìœ„ì¹˜ì™€ ì¹´ë©”ë¼ì˜ ìœ„ì¹˜ë¥¼ ì„¤ì •í•œë‹¤. 
+	// ÇÃ·¹ÀÌ¾î °´Ã¼ÀÇ À§Ä¡¿Í Ä«¸Ş¶óÀÇ À§Ä¡¸¦ ¼³Á¤ÇÑ´Ù. 
 	m_xmf3Position = XMFLOAT3(x, y, z);
 	CGameObject::SetPosition(x, y, z);
 }
 
 //void CPlayer::SetRotation(float x, float y, float z)
 //{
-//	// í”Œë ˆì´ì–´ ê°ì²´ì™€ ì¹´ë©”ë¼ì˜ íšŒì „ ê°ë„ë¥¼ ì„¤ì •í•œë‹¤.
+//	// ÇÃ·¹ÀÌ¾î °´Ã¼¿Í Ä«¸Ş¶óÀÇ È¸Àü °¢µµ¸¦ ¼³Á¤ÇÑ´Ù.
 //	CGameObject::SetRotation(x, y, z);
 //	if (m_pCamera) m_pCamera->SetRotation(x, y, z);
 //}
@@ -71,7 +71,7 @@ void CPlayer::Move(float x, float y, float z)
 
 void CPlayer::Rotate(float fPitch, float fYaw, float fRoll)
 {
-	// í”Œë ˆì´ì–´ ê°ì²´ì™€ ì¹´ë©”ë¼ë¥¼ íšŒì „í•œë‹¤.
+	// ÇÃ·¹ÀÌ¾î °´Ã¼¿Í Ä«¸Ş¶ó¸¦ È¸ÀüÇÑ´Ù.
 	m_pCamera->Rotate(fPitch, fYaw, fRoll);
 	if (fPitch != 0.0f)
 	{
@@ -92,7 +92,7 @@ void CPlayer::Rotate(float fPitch, float fYaw, float fRoll)
 		XMStoreFloat3(&m_xmf3Right, XMVector3TransformNormal(XMLoadFloat3(&m_xmf3Right), xmmtxRotate));
 	}
 
-	// ì¶• ì •ê·œí™”
+	// Ãà Á¤±ÔÈ­
 	XMVECTOR xmvLook = XMVector3Normalize(XMLoadFloat3(&m_xmf3Look));
 	XMVECTOR xmvUp = XMVector3Normalize(XMLoadFloat3(&m_xmf3Up));
 	XMVECTOR xmvRight = XMVector3Normalize(XMVector3Cross(xmvUp, xmvLook));
@@ -120,7 +120,7 @@ void CPlayer::Update(float fTimeElapsed)
 	m_pCamera->Update(this, m_xmf3Position, fTimeElapsed);
 	m_pCamera->GenerateViewMatrix();
 
-	// ë§ˆì°° ê³„ìˆ˜ì— ë”°ë¥¸ ê°ì† êµ¬í˜„
+	// ¸¶Âû °è¼ö¿¡ µû¸¥ °¨¼Ó ±¸Çö
 	XMVECTOR xmvVelocity = XMLoadFloat3(&m_xmf3Velocity);
 	XMVECTOR xmvDeceleration = XMVector3Normalize(XMVectorScale(xmvVelocity, -1.0f));
 	float fLength = XMVectorGetX(XMVector3Length(xmvVelocity));
@@ -163,7 +163,7 @@ void CAirplanePlayer::OnUpdateTransform()
 {
 	CPlayer::OnUpdateTransform();
 
-	m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(0.0f, DegreeToRadian(-90.0f), 0.0f), m_xmf4x4World);
+	m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(DegreeToRadian(-90.0f), DegreeToRadian(180.0f), DegreeToRadian(0.0f)), m_xmf4x4World);
 }
 
 void CAirplanePlayer::Animate(float fElapsedTime)
@@ -216,7 +216,7 @@ void CAirplanePlayer::FireBullet(CGameObject* pLockedObject, std::vector<CGameOb
 		XMFLOAT3 xmf3Direction = GetLook();
 		XMFLOAT3 xmf3FirePosition = Vector3::Add(xmf3Position, Vector3::ScalarProduct(xmf3Direction, 6.0f, false));
 
-		pBulletObject->SetWorldMatrix(Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(0.f, DegreeToRadian(90.f), 0.f), m_xmf4x4World));
+		pBulletObject->SetWorldMatrix(Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(DegreeToRadian(-90.f), 0.f, 0.f), m_xmf4x4World));
 
 		pBulletObject->SetFirePosition(xmf3FirePosition);
 		pBulletObject->SetMovingDirection(xmf3Direction);

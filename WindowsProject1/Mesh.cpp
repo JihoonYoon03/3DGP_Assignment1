@@ -109,9 +109,11 @@ void CMesh::SetMesh(std::vector<CVertex>& vertices, std::vector<UINT>& indices)
 				m_Vertices[m_Indices[i + 2]]
 			);
 
-			m_Triangles.push_back(triangle);
+			m_Triangles.emplace_back(triangle);
 		}
 	}
+
+	OutputDebugStringW((std::to_wstring(m_Triangles.size()) + L" Triangles Loaded...\n").c_str());
 }
 
 void Draw2DLine(HDC hDCFrameBuffer, XMFLOAT3& f3PrevProject, XMFLOAT3& f3CurProject)

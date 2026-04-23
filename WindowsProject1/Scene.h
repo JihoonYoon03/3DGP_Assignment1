@@ -3,6 +3,8 @@
 #include "GameObject.h"
 #include "Camera.h"
 
+class CGameTimer;
+
 // ===============================================================
 class CScene {
 // ===============================================================
@@ -34,6 +36,8 @@ public:
 
 	virtual void OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam);
 	virtual void OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam);
+
+	virtual void ProcessInput(HWND& hWnd, UCHAR* pKeyBuffer, CGameTimer& timer) {}
 };
 
 // ===============================================================
@@ -69,4 +73,6 @@ public:
 
 	virtual void OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam) override;
 	virtual void OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam) override;
+
+	virtual void ProcessInput(HWND& hWnd, UCHAR* pKeyBuffer, CGameTimer& timer) override;
 };

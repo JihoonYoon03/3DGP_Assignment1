@@ -339,7 +339,6 @@ void CBulletObject::EventCollision(CGameObject* objCollided, const eObjType objT
 
 CUIObject::CUIObject()
 {
-	m_dwColorPicked = RGB(255, 255, 255) - m_dwColor;
 }
 
 CUIObject::~CUIObject()
@@ -347,7 +346,6 @@ CUIObject::~CUIObject()
 	if (hPenPicked)	::DeleteObject(hPenPicked);
 	if (hBrushPicked)	::DeleteObject(hBrushPicked);
 }
-
 
 // render called by instance
 void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
@@ -372,17 +370,17 @@ void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4
 		}
 
 		if (not hPenPicked) {
-			hPenPicked = ::CreatePen(PS_SOLID, 0, m_dwColorPicked);
+			hPenPicked = ::CreatePen(PS_SOLID, 0, RGB(255, 255, 255) - m_dwColor);
 		}
 		if (not hBrushPicked) {
-			hBrushPicked = ::CreateSolidBrush(m_dwColorPicked);
+			hBrushPicked = ::CreateSolidBrush(RGB(255, 255, 255) - m_dwColor);
 			//hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
 		}
 
 		HPEN hOldPen = NULL;
 		HBRUSH hOldBrush = NULL;
 
-		if (picking) {
+		if (m_bMouseHover) {
 			hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPenPicked);
 			hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrushPicked);
 		}
@@ -396,9 +394,4 @@ void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4
 		::SelectObject(hDCFrameBuffer, hOldPen);
 		::SelectObject(hDCFrameBuffer, hOldBrush);
 	}
-}
-
-void CUIObject::EventPicking()
-{
-	picking = true;
 }

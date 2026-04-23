@@ -47,7 +47,7 @@ public:
 	int PickObjectByRayIntersection(XMVECTOR& xmPickPosition, XMMATRIX& xmmtxView, float& pfHitDistance);
 
 	virtual void EventCollision(CGameObject* objCollided, const eObjType objType) {}
-	virtual void EventPicking() {};
+	virtual void EventPicking() {}
 
 	XMFLOAT3 GetPosition();
 	const XMFLOAT4X4& GetWorldMatrix() const { return m_xmf4x4World; }
@@ -153,16 +153,16 @@ public:
 	CUIObject();
 	virtual ~CUIObject();
 
+	void setCheckMouseHover(bool set) { m_bCheckMouseHover = set; }
+
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh) override;
 
-	virtual void EventPicking() override;
-
-
+	virtual void EventBeginMouseHovering() { if (m_bCheckMouseHover) m_bMouseHover = true; }
+	virtual void EventEndMouseHovering() { m_bMouseHover = false; }
 private:
-	bool picking = false;
-
-	DWORD m_dwColorPicked;
+	bool	m_bCheckMouseHover = false;
+	bool	m_bMouseHover = false;
 
 	HPEN hPenPicked = NULL;
 	HBRUSH hBrushPicked = NULL;
