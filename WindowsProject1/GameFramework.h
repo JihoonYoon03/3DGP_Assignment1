@@ -37,6 +37,9 @@ public:
 	void OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam);
 	LRESULT CALLBACK OnProcessingWindowMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam);
 
+	// 장면 전환 함수
+	void ChangeSceneTo(SceneType next, bool removeScene = false);
+
 	void SetActive(bool bActive) { m_bActive = bActive; }
 
 private:
@@ -71,5 +74,18 @@ private:
 
 	// 프레임 레이트
 	std::wstring	m_pszFrameRate;
+
+	// 씬 실제 전환 함수
+	template<class T>
+	void ChangeScene(std::shared_ptr<CScene>& before, std::shared_ptr<T>& after) {
+		if (before == after) {
+			::PostQuitMessage(0);
+			return;
+		}
+
+		before->ExitScene();
+		after->EnterScene();
+		m_pCurrentScene = after;
+	}
 };
 

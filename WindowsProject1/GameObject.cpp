@@ -2,6 +2,7 @@
 #include "GameObject.h"
 #include "GraphicsPipeline.h"
 #include "GameVar.h"
+#include "Scene.h"
 
 std::uniform_real_distribution<float> disFloat{ -1.f, 1.f };
 
@@ -393,5 +394,12 @@ void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4
 
 		::SelectObject(hDCFrameBuffer, hOldPen);
 		::SelectObject(hDCFrameBuffer, hOldBrush);
+	}
+}
+
+void CUIObject::EventPicking()
+{
+	if (m_OnClickCallback) {
+		m_OnClickCallback();
 	}
 }

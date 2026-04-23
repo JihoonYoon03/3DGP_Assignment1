@@ -21,6 +21,7 @@
 #include <ranges>
 #include <algorithm>
 #include <random>
+#include <functional>
 
 // 간단한 사운드 출력, 시스템 시간 확인용 (Multimedia system)
 #include <Mmsystem.h>

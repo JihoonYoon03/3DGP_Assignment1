@@ -122,8 +122,8 @@ void CGameFramework::BuildObjects()
 	m_pPlayer->SetCamera(pCamera);
 	m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 5.0f, -15.0f));
 
-	m_pSceneTitle = std::make_shared<CSceneTitle>(pCamera);
-	m_pSceneStage = std::make_shared<CSceneStage>(m_pPlayer);
+	m_pSceneTitle = std::make_shared<CSceneTitle>(this, pCamera);
+	m_pSceneStage = std::make_shared<CSceneStage>(this, m_pPlayer);
 	m_pSceneTitle->BuildObjects();
 	m_pSceneStage->BuildObjects();
 
@@ -138,28 +138,6 @@ void CGameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM
 {
 	if (m_pCurrentScene)
 		m_pCurrentScene->OnProcessingMouseMessage(hWnd, nMessageID, wParam, lParam);
-
-	switch (nMessageID)
-	{
-	case WM_RBUTTONDOWN:
-	case WM_LBUTTONDOWN:
-		::SetCapture(hWnd);
-		::GetCursorPos(&oldCursorPos);
-		if (nMessageID == WM_LBUTTONDOWN) {
-			m_pCurrentScene->FireBullet(m_pLockedObject);
-			m_pLockedObject = nullptr;
-		}
-		//if (nMessageID == WM_RBUTTONDOWN) m_pLockedObject = m_pCurrentScene->PickObjectPointedByCursor(LOWORD(lParam), HIWORD(lParam), m_pPlayer->m_pCamera);
-		break;
-	case WM_LBUTTONUP:
-	case WM_RBUTTONUP:
-		::ReleaseCapture();
-		break;
-	case WM_MOUSEMOVE:
-		break;
-	default:
-		break;
-	}
 }
 
 void CGameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
@@ -217,6 +195,24 @@ LRESULT CALLBACK CGameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMess
 	}
 	return(0);
 }
+
+void CGameFramework::ChangeSceneTo(SceneType next, bool removeScene)
+{
+	switch (next) {
+	case SceneType::title:
+		ChangeScene<CSceneTitle>(m_pCurrentScene, m_pSceneTitle);
+		break;
+	case SceneType::stage:
+		ChangeScene<CSceneStage>(m_pCurrentScene, m_pSceneStage);
+		break;
+	case SceneType::exit:
+		ChangeScene<CScene>(m_pCurrentScene, m_pCurrentScene);
+		break;
+	default:
+		break;
+	}
+}
+
 
 void CGameFramework::ProcessInput()
 {

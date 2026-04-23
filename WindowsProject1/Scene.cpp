@@ -4,10 +4,12 @@
 #include "Player.h"
 #include "GameVar.h"
 #include "Timer.h"
+#include "GameFramework.h"
 
-CScene::CScene(CPlayer* pPlayer)
+CScene::CScene(CGameFramework* pFramework, CPlayer* pPlayer)
 {
 	m_pPlayer = pPlayer;
+	m_pFramework = pFramework;
 
 	if (pPlayer) m_mapObjects.emplace(eObjType::Player, std::vector<CGameObject*>{pPlayer});
 }
@@ -45,11 +47,11 @@ CGameObject* CScene::PickObjectPointedByCursor(int xClient, int yClient, CCamera
 
 	for (auto& vObject : m_mapObjects) {
 		for (auto& object : vObject.second) {
-			
+
 			float fHitDistance = FLT_MAX;
 			nIntersected = object->PickObjectByRayIntersection(xmvPickPosition, xmmtxView, fHitDistance);
 
-			if (nIntersected && fHitDistance < fNearestHitDistance)	{
+			if (nIntersected && fHitDistance < fNearestHitDistance) {
 				fNearestHitDistance = fHitDistance;
 				pNearestObject = object;
 			}
@@ -61,7 +63,7 @@ CGameObject* CScene::PickObjectPointedByCursor(int xClient, int yClient, CCamera
 
 void CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
-	switch (nMessageID)	{
+	switch (nMessageID) {
 	case WM_RBUTTONDOWN:
 		break;
 	case WM_LBUTTONDOWN:
@@ -79,6 +81,15 @@ void CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam,
 
 void CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
+}
+
+void CScene::EnterScene()
+{
+}
+
+void CScene::ExitScene()
+{
+	m_fSceneChangeElapsed = 0.f;
 }
 
 void CScene::Animate(float fElapsedTime)
@@ -99,10 +110,16 @@ void CScene::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 	CGraphicsPipeline::SetViewPerspectiveProjectTransform(&pCamera->m_xmf4x4ViewPerspectiveProject);
 
 	std::vector<CGameObject*> cullPassed;
+	size_t objcnt = 0;
+	for (auto& vec : m_mapObjects) {
+		objcnt += vec.second.size();
+	}
+
+	cullPassed.reserve(objcnt);
 	for (auto& vObj : m_mapObjects) {
 		for (auto& obj : vObj.second) {
 			if (obj->FrustumCullingTest(pCamera))
-				cullPassed.push_back(obj);
+				cullPassed.emplace_back(obj);
 		}
 	}
 
@@ -124,9 +141,9 @@ void CScene::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 }
 
 // ===============================================================
-CSceneTitle::CSceneTitle(CCamera* pCamera)
-	: CScene()
-// ===============================================================
+CSceneTitle::CSceneTitle(CGameFramework* pFramework, CCamera* pCamera)
+	: CScene(pFramework)
+	// ===============================================================
 {
 	m_pCamera = pCamera;
 }
@@ -164,8 +181,11 @@ void CSceneTitle::BuildObjects()
 	newObject->SetPosition(0.0f, -7.0f, 0.0f);
 	newObject->SetRotationAxis(XMFLOAT3(0.f, 1.f, 0.f));
 	newObject->SetRotationSpeed(-20.0f);
-	newObject->LookAt(m_pCamera->GetPosition(), XMFLOAT3(0.f, 1.f, 0.f ));
+	newObject->LookAt(m_pCamera->GetPosition(), XMFLOAT3(0.f, 1.f, 0.f));
 	newObject->setCheckMouseHover(true);
+	newObject->SetOnClickCallback([this]() {
+		m_pFramework->ChangeSceneTo(SceneType::stage);
+		});
 	objects.push_back(newObject);
 
 	m_mapObjects.emplace(eObjType::UI, std::move(objects));
@@ -178,7 +198,7 @@ void CSceneTitle::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wP
 	{
 	case WM_MOUSEMOVE:
 	case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN: 
+	case WM_RBUTTONDOWN:
 	{
 		::SetCapture(hWnd);
 		::GetCursorPos(&oldCursorPos);
@@ -197,7 +217,7 @@ void CSceneTitle::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wP
 			}
 		}
 	}
-		break;
+	break;
 	case WM_LBUTTONUP:
 	case WM_RBUTTONUP:
 		::ReleaseCapture();
@@ -216,9 +236,9 @@ void CSceneTitle::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM
 }
 
 // ===============================================================
-CSceneStage::CSceneStage(CPlayer* player)
-	: CScene(player)
-// ===============================================================
+CSceneStage::CSceneStage(CGameFramework* pFramework, CPlayer* player)
+	: CScene(pFramework, player)
+	// ===============================================================
 {
 }
 
@@ -313,6 +333,25 @@ void CSceneStage::FireBullet(CGameObject* pLockedObject)
 
 void CSceneStage::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
+	switch (nMessageID)
+	{
+	case WM_RBUTTONDOWN:
+	case WM_LBUTTONDOWN:
+		::SetCapture(hWnd);
+		::GetCursorPos(&oldCursorPos);
+		if (nMessageID == WM_LBUTTONDOWN) {
+			FireBullet(nullptr);
+		}
+		break;
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+		::ReleaseCapture();
+		break;
+	case WM_MOUSEMOVE:
+		break;
+	default:
+		break;
+	}
 }
 
 void CSceneStage::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
@@ -357,7 +396,7 @@ void CSceneStage::ProcessInput(HWND& hWnd, UCHAR* pKeyBuffer, CGameTimer& timer)
 		if (pKeyBuffer[VK_SPACE] & 0xF0) dwDirection |= DIR_UP;
 		if (pKeyBuffer[VK_CONTROL] & 0xF0) dwDirection |= DIR_DOWN;
 
-		if (dwDirection) m_pPlayer->Move(dwDirection, 0.15f);
+		if (dwDirection) m_pPlayer->Move(dwDirection, timer.GetTimeElapsed());
 	}
 
 	if (GetCapture() == hWnd)

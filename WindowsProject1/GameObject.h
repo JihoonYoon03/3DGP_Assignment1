@@ -154,10 +154,14 @@ public:
 	virtual ~CUIObject();
 
 	void setCheckMouseHover(bool set) { m_bCheckMouseHover = set; }
+	
+	// 콜백을 설정하는 함수
+	void SetOnClickCallback(std::function<void()> callback) { m_OnClickCallback = callback; }
 
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh) override;
 
+	virtual void EventPicking() override;
 	virtual void EventBeginMouseHovering() { if (m_bCheckMouseHover) m_bMouseHover = true; }
 	virtual void EventEndMouseHovering() { m_bMouseHover = false; }
 private:
@@ -166,4 +170,6 @@ private:
 
 	HPEN hPenPicked = NULL;
 	HBRUSH hBrushPicked = NULL;
+
+	std::function<void()> m_OnClickCallback = nullptr;
 };
