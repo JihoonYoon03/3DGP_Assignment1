@@ -21,8 +21,8 @@ void CScene::CheckCollision(const eObjType typeA, const eObjType typeB)
 	for (auto& objectA : m_mapObjects[typeA]) {
 		for (auto& objectB : m_mapObjects[typeB]) {
 			if (objectA->isActive() && objectB->isActive() && objectA->GetOOBB().Intersects(objectB->GetOOBB())) {
-				objectA->HandleCollision(objectB, typeB);
-				objectB->HandleCollision(objectA, typeA);
+				objectA->EventCollision(objectB, typeB);
+				objectB->EventCollision(objectA, typeA);
 			}
 		}
 	}
@@ -144,18 +144,29 @@ void CSceneTitle::Animate(float fElapsedTime)
 
 void CSceneTitle::BuildObjects()
 {
-	CCubeMesh* pCubeMesh = new CCubeMesh(4.0f, 4.0f, 4.0f);
+	CMesh* pAirplaneMesh = new CMesh(L"../Resources/Obj/LowPolyF22.obj", 0.05f);
+	CCubeMesh* cubeMesh = new CCubeMesh(1.5f, 1.5f, 1.5f);
 
 	std::vector<CGameObject*> objects;
 
-	CGameObject* newObject = new CGameObject();
-	newObject->SetMesh(pCubeMesh);
-	newObject->SetColor(RGB(255, 0, 0));
-	newObject->SetPosition(-13.5f, 0.0f, +14.0f);
-	newObject->SetRotationAxis(XMFLOAT3(1.0f, 1.0f, 0.0f));
+	CUIObject* newObject = new CUIObject();
+	newObject->SetMesh(pAirplaneMesh);
+	newObject->SetColor(RGB(60, 60, 70));
+	newObject->SetPosition(0.0f, 0.0f, 0.0f);
+	newObject->SetWorldMatrix(Matrix4x4::RotationYawPitchRoll(0.f, -90.f, 90.f));
+	newObject->SetRotationAxis(XMFLOAT3(1.0f, 0.0f, 0.0f));
 	newObject->SetRotationSpeed(90.0f);
 	newObject->SetMovingDirection(XMFLOAT3(1.0f, 0.0f, 0.0f));
 	newObject->SetMovingSpeed(0.0f);
+	objects.push_back(newObject);
+
+	newObject = new CUIObject();
+	newObject->SetMesh(cubeMesh);
+	newObject->SetColor(RGB(255, 0, 0));
+	newObject->SetPosition(0.0f, -7.0f, 0.0f);
+	newObject->SetRotationAxis(XMFLOAT3(0.f, 1.f, 0.f));
+	newObject->SetRotationSpeed(-20.0f);
+	newObject->LookAt(m_pCamera->GetPosition(), XMFLOAT3(0.f, 1.f, 0.f ));
 	objects.push_back(newObject);
 
 	m_mapObjects.emplace(eObjType::UI, std::move(objects));
@@ -172,11 +183,7 @@ void CSceneTitle::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wP
 		::GetCursorPos(&oldCursorPos);
 		if (nMessageID == WM_LBUTTONDOWN && m_pCamera) {
 			CGameObject* picked = PickObjectPointedByCursor(LOWORD(lParam), HIWORD(lParam), m_pCamera);
-			for (const auto& object : m_mapObjects[eObjType::UI]) {
-				if (object == picked) {
-					OutputDebugStringW(L"Picked!\n");
-				}
-			}
+			if (picked)	picked->EventPicking();
 		}
 		break;
 	case WM_LBUTTONUP:

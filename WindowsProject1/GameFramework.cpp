@@ -98,6 +98,10 @@ void CGameFramework::BuildTextBuffer()
 	std::wstring out = L"Fighter Jet";
 	RECT rc = m_rcClient;
 	::DrawText(m_hDCTextBuffer, out.c_str(), -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	out = L"Game Start";
+	rc.top += FRAMEBUFFER_HEIGHT / 1.6;
+	::DrawText(m_hDCTextBuffer, out.c_str(), -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
 void CGameFramework::BuildObjects()
@@ -109,7 +113,7 @@ void CGameFramework::BuildObjects()
 
 	pCamera->GenerateOrthographicProjectionMatrix(1.01f, 50.0f, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
 
-	CMesh* pAirplaneMesh = new CMesh(L"../Resources/Obj/LowPolyF22.obj");
+	CMesh* pAirplaneMesh = new CMesh(L"../Resources/Obj/LowPolyF22.obj", 0.05f);
 
 	m_pPlayer = new CAirplanePlayer();
 	m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);

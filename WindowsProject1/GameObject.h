@@ -25,7 +25,7 @@ public:
 	void SetRotationSpeed(float fSpeed) { m_fRotationSpeed = fSpeed; }
 
 	void LookTo(XMFLOAT3& xmf3LookTo, XMFLOAT3& xmf3Up);
-	void LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
+	void LookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up);
 
 	void SetWorldMatrix(const XMFLOAT4X4& matrix) { m_xmf4x4World = matrix; }
 	
@@ -46,7 +46,8 @@ public:
 	void GenerateRayForPicking(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection);
 	int PickObjectByRayIntersection(XMVECTOR& xmPickPosition, XMMATRIX& xmmtxView, float& pfHitDistance);
 
-	virtual void HandleCollision(CGameObject* objCollided, const eObjType objType) {}
+	virtual void EventCollision(CGameObject* objCollided, const eObjType objType) {}
+	virtual void EventPicking() {};
 
 	XMFLOAT3 GetPosition();
 	const XMFLOAT4X4& GetWorldMatrix() const { return m_xmf4x4World; }
@@ -96,7 +97,7 @@ public:
 
 	void Animate(float fElapsedTime) override;
 	void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
-	void HandleCollision(CGameObject* objCollided, const eObjType objType) override;
+	void EventCollision(CGameObject* objCollided, const eObjType objType) override;
 
 public:
 	static CMesh* m_pExplosionMesh;
@@ -130,7 +131,7 @@ public:
 	void SetLockedObject(CGameObject* object) { m_pLockedObject = object; }
 
 	void Animate(float fElapsedTime) override;
-	void HandleCollision(CGameObject* objCollided, const eObjType objType) override;
+	void EventCollision(CGameObject* objCollided, const eObjType objType) override;
 
 private:
 	float						m_fBulletEffectiveRange = 50.0f;
@@ -145,4 +146,24 @@ private:
 	CGameObject* m_pLockedObject = nullptr;
 
 	void Reset();
+};
+
+class CUIObject : public CGameObject {
+public:
+	CUIObject();
+	virtual ~CUIObject();
+
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh) override;
+
+	virtual void EventPicking() override;
+
+
+private:
+	bool picking = false;
+
+	DWORD m_dwColorPicked;
+
+	HPEN hPenPicked = NULL;
+	HBRUSH hBrushPicked = NULL;
 };

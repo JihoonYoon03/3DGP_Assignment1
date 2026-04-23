@@ -25,10 +25,10 @@ public:
 class CMesh {
 public:
 	CMesh() {}
-	CMesh(const WCHAR* fileName);
+	CMesh(const WCHAR* fileName, float fScale = 1.0f);
 	virtual ~CMesh();
 
-	void LoadMeshFromObj(const WCHAR* pstrFileName);
+	void LoadMeshFromObj(const WCHAR* pstrFileName, float fScale);
 	void SetMesh(std::vector<CVertex>& vertices, std::vector<UINT>& indices);
 	
 	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera, const XMVECTOR& LocalCameraPos);

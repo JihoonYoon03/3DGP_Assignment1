@@ -25,10 +25,10 @@ void CTriangle::CalculateNormal(const CVertex& vertex0, const CVertex& vertex1, 
 //}
 
 //=============================
-CMesh::CMesh(const WCHAR* fileName)
+CMesh::CMesh(const WCHAR* fileName, float fScale)
 //=============================
 {
-	LoadMeshFromObj(fileName);
+	LoadMeshFromObj(fileName, fScale);
 }
 
 CMesh::~CMesh()
@@ -43,7 +43,7 @@ void CMesh::Release()
 		delete this;
 }
 
-void CMesh::LoadMeshFromObj(const WCHAR* fileName)
+void CMesh::LoadMeshFromObj(const WCHAR* fileName, float fScale)
 {
 	std::ifstream file(fileName);
 	if (not file) {
@@ -63,9 +63,9 @@ void CMesh::LoadMeshFromObj(const WCHAR* fileName)
 		ss >> prefix;
 
 		if (prefix == "v") {
-			XMFLOAT3 pos;
+			XMFLOAT3 pos{};
 			ss >> pos.x >> pos.y >> pos.z;
-			vertexBuf.push_back(CVertex(pos.x * 0.05f, pos.y * 0.05f, pos.z * 0.05f));
+			vertexBuf.push_back(CVertex(pos.x * fScale, pos.y * fScale, pos.z * fScale));
 		}
 		else if (prefix == "f") {
 			UINT i[3];

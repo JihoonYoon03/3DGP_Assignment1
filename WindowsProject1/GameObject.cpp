@@ -66,7 +66,7 @@ void CGameObject::LookTo(XMFLOAT3& xmf3LookTo, XMFLOAT3& xmf3Up)
 	m_xmf4x4World._31 = xmf4x4View._13; m_xmf4x4World._32 = xmf4x4View._23; m_xmf4x4World._33 = xmf4x4View._33;
 }
 
-void CGameObject::LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
+void CGameObject::LookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up)
 {
 	XMFLOAT4X4 xmf4x4View = Matrix4x4::LookAtLH(GetPosition(), xmf3LookAt, xmf3Up);
 	m_xmf4x4World._11 = xmf4x4View._11; m_xmf4x4World._12 = xmf4x4View._21; m_xmf4x4World._13 = xmf4x4View._31;
@@ -251,7 +251,7 @@ void CExplosiveObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 	}
 }
 
-void CExplosiveObject::HandleCollision(CGameObject* objCollided, const eObjType objType)
+void CExplosiveObject::EventCollision(CGameObject* objCollided, const eObjType objType)
 {
 	if (objCollided && objType == eObjType::Bullet) {
 		OutputDebugStringW(L"Explosive Collided\n");
@@ -327,10 +327,78 @@ void CBulletObject::Animate(float fElapsedTime)
 	if ((m_fMovingDistance > m_fBulletEffectiveRange) || (m_fElapsedTimeAfterFire > m_fLockingTime)) Reset();
 }
 
-void CBulletObject::HandleCollision(CGameObject* objCollided, const eObjType objType)
+void CBulletObject::EventCollision(CGameObject* objCollided, const eObjType objType)
 {
 	if (objCollided && objType == eObjType::Explosive) {
 		OutputDebugStringW(L"Bullet Collided\n");
 		this->Reset();
 	}
+}
+
+// ===========================================================================
+
+CUIObject::CUIObject()
+{
+	m_dwColorPicked = RGB(255, 255, 255) - m_dwColor;
+}
+
+CUIObject::~CUIObject()
+{
+	if (hPenPicked)	::DeleteObject(hPenPicked);
+	if (hBrushPicked)	::DeleteObject(hBrushPicked);
+}
+
+
+// render called by instance
+void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+{
+	CUIObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+}
+
+void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
+{
+	if (pMesh) {
+		CGraphicsPipeline::SetWorldTransform(pxmf4x4World);
+
+		XMMATRIX mtxWorldInv = XMMatrixInverse(nullptr, XMLoadFloat4x4(pxmf4x4World));
+		XMVECTOR vLocalCameraPos = XMVector3TransformCoord(XMLoadFloat3(&pCamera->GetPosition()), mtxWorldInv);
+
+		if (not hPen) {
+			hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
+		}
+		if (not hBrush) {
+			hBrush = ::CreateSolidBrush(m_dwColor);
+			//hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
+		}
+
+		if (not hPenPicked) {
+			hPenPicked = ::CreatePen(PS_SOLID, 0, m_dwColorPicked);
+		}
+		if (not hBrushPicked) {
+			hBrushPicked = ::CreateSolidBrush(m_dwColorPicked);
+			//hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
+		}
+
+		HPEN hOldPen = NULL;
+		HBRUSH hOldBrush = NULL;
+
+		if (picking) {
+			hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPenPicked);
+			hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrushPicked);
+		}
+		else {
+			hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
+			hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
+		}
+
+		pMesh->Render(hDCFrameBuffer, pCamera, vLocalCameraPos);
+
+		::SelectObject(hDCFrameBuffer, hOldPen);
+		::SelectObject(hDCFrameBuffer, hOldBrush);
+	}
+}
+
+void CUIObject::EventPicking()
+{
+	picking = true;
 }
