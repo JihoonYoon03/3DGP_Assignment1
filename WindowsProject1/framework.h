@@ -58,7 +58,7 @@ constexpr int FRAMEBUFFER_HEIGHT	= 480;
 
 //#define WIREFRAME_MODE
 
-enum class eObjType { Terrain, Player, Bullet, Explosive, UI, TypeMax };
+enum class eObjType { Player, Bullet, Enemy, Explosive, UI, TypeMax };
 
 inline bool IsZero(float fValue) { return((fabsf(fValue) < EPSILON)); }
 inline bool IsEqual(float fA, float fB) { return(::IsZero(fA - fB)); }
@@ -174,6 +174,16 @@ namespace Vector3
 	inline XMFLOAT3 TransformCoord(const XMFLOAT3& xmf3Vector, const XMFLOAT4X4& xmmtx4x4Matrix)
 	{
 		return(TransformCoord(xmf3Vector, XMLoadFloat4x4(&xmmtx4x4Matrix)));
+	}
+
+	inline bool Equal(const XMFLOAT3& xmf3Vector1, const XMFLOAT3& xmf3Vector2)
+	{
+		return XMVector3Equal(XMLoadFloat3(&xmf3Vector1), XMLoadFloat3(&xmf3Vector2));
+	}
+
+	inline bool NotEqual(const XMFLOAT3& xmf3Vector1, const XMFLOAT3& xmf3Vector2)
+	{
+		return XMVector3NotEqual(XMLoadFloat3(&xmf3Vector1), XMLoadFloat3(&xmf3Vector2));
 	}
 }
 

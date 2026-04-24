@@ -14,13 +14,6 @@ void CPlayer::SetPosition(float x, float y, float z)
 	CGameObject::SetPosition(x, y, z);
 }
 
-//void CPlayer::SetRotation(float x, float y, float z)
-//{
-//	// 플레이어 객체와 카메라의 회전 각도를 설정한다.
-//	CGameObject::SetRotation(x, y, z);
-//	if (m_pCamera) m_pCamera->SetRotation(x, y, z);
-//}
-
 void CPlayer::LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
 {
 	XMFLOAT4X4 xmf4x4View;
@@ -229,4 +222,91 @@ void CAirplanePlayer::FireBullet(CGameObject* pLockedObject, std::vector<CGameOb
 			pBulletObject->SetColor(RGB(0, 0, 255));
 		}
 	}
+}
+
+
+
+// =====================================================================================
+// =====================================================================================
+
+CEnemyAirplane::CEnemyAirplane()
+{
+	m_fRotationSpeed = m_fMaxRotationSpeed;
+}
+
+CEnemyAirplane::CEnemyAirplane(CPlayer* pPlayer)
+{
+	m_pPlayer = pPlayer;
+	m_fRotationSpeed = m_fMaxRotationSpeed;
+}
+
+void CEnemyAirplane::SetPosition(float x, float y, float z)
+{
+	// 플레이어 객체의 위치와 카메라의 위치를 설정한다. 
+	m_xmf3Position = XMFLOAT3(x, y, z);
+	CGameObject::SetPosition(x, y, z);
+}
+
+void CEnemyAirplane::LookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up)
+{
+	// 영벡터 방지용 코드
+	if (Vector3::Equal(GetPosition(), xmf3LookAt)) return;
+
+	XMFLOAT4X4 xmf4x4View;
+	xmf4x4View = Matrix4x4::LookAtLH(GetPosition(), xmf3LookAt, xmf3Up);
+
+	XMVECTORF32 xmf32vRight = { xmf4x4View._11, xmf4x4View._21, xmf4x4View._31, 0.0f };
+	XMVECTORF32 xmf32vUp = { xmf4x4View._12, xmf4x4View._22, xmf4x4View._32, 0.0f };
+	XMVECTORF32 xmf32vLook = { xmf4x4View._13, xmf4x4View._23, xmf4x4View._33, 0.0f };
+
+	XMStoreFloat3(&m_xmf3Right, XMVector3Normalize(xmf32vRight));
+	XMStoreFloat3(&m_xmf3Up, XMVector3Normalize(xmf32vUp));
+	XMStoreFloat3(&m_xmf3Look, XMVector3Normalize(xmf32vLook));
+}
+
+void CEnemyAirplane::Move(float elapsedTime)
+{
+	// deltatime 반영해서 속도만큼 이동
+	XMStoreFloat3(&m_xmf3Position, XMVectorAdd(XMLoadFloat3(&m_xmf3Position), XMLoadFloat3(&m_xmf3Look) * m_fMaxSpeed * elapsedTime));
+}
+
+void CEnemyAirplane::Update(float fTimeElapsed)
+{
+	// 타깃을 향해 회전
+	LookAt(m_pPlayer->GetPosition(), XMFLOAT3(0.0f, 1.0f, 0.0f));
+
+	// 타깃과의 거리가 먼 상태면, 최대 속도로 이동
+	OutputDebugStringW(
+		(std::to_wstring(Vector3::Length(Vector3::Subtract(m_pPlayer->GetPosition(), GetPosition()))) + L"\n").c_str());
+	if (Vector3::Length(Vector3::Subtract(m_pPlayer->GetPosition(), GetPosition())) > m_fRange) {
+		m_fCurSpeed = m_fMaxSpeed;
+		Move(fTimeElapsed);
+	}
+	else {
+		// 마찰 계수에 따른 감속 구현
+		XMVECTOR xmvVelocity = XMLoadFloat3(&m_xmf3Direction);
+		XMVECTOR xmvDeceleration = XMVector3Normalize(XMVectorScale(xmvVelocity, -1.0f));
+		float fLength = XMVectorGetX(XMVector3Length(xmvVelocity));
+		float fDeceleration = m_fFriction * fTimeElapsed;
+		if (fDeceleration > fLength) fDeceleration = fLength;
+		XMStoreFloat3(&m_xmf3Direction, XMVectorAdd(xmvVelocity, XMVectorScale(xmvDeceleration, fDeceleration)));
+	}
+}
+
+void CEnemyAirplane::OnUpdateTransform()
+{
+	m_xmf4x4World._11 = m_xmf3Right.x; m_xmf4x4World._12 = m_xmf3Right.y; m_xmf4x4World._13 = m_xmf3Right.z;
+	m_xmf4x4World._21 = m_xmf3Up.x; m_xmf4x4World._22 = m_xmf3Up.y; m_xmf4x4World._23 = m_xmf3Up.z;
+	m_xmf4x4World._31 = m_xmf3Look.x; m_xmf4x4World._32 = m_xmf3Look.y; m_xmf4x4World._33 = m_xmf3Look.z;
+	m_xmf4x4World._41 = m_xmf3Position.x; m_xmf4x4World._42 = m_xmf3Position.y; m_xmf4x4World._43 = m_xmf3Position.z;
+
+	m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(DegreeToRadian(-90.0f), DegreeToRadian(180.0f), DegreeToRadian(0.0f)), m_xmf4x4World);
+}
+
+void CEnemyAirplane::Animate(float fElapsedTime)
+{
+	Update(fElapsedTime);
+	OnUpdateTransform();
+
+	CGameObject::Animate(fElapsedTime);
 }

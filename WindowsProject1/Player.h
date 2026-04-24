@@ -9,8 +9,7 @@ public:
 	virtual ~CPlayer();
 	
 	void SetPosition(float x, float y, float z);
-	//void SetRotation(float x, float y, float z);
-
+	
 	// 바라보는 지점 입력받아 기저벡터 갱신
 	void LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
 
@@ -76,3 +75,49 @@ private:
 	unsigned int	m_ammo = 50;
 };
 
+
+class CEnemyAirplane : public CExplosiveObject {
+public:
+	CEnemyAirplane();
+	CEnemyAirplane(CPlayer* pPlayer);
+	virtual ~CEnemyAirplane() {};
+
+	void SetPosition(float x, float y, float z);
+
+	// 바라보는 지점 입력받아 기저벡터 갱신
+	void LookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up);
+
+	//void UpdateDirection(DWORD dwDirection, float elapsedTime);
+	void Move(float elapsedTime);
+
+	void Update(float fTimeElapsed = 0.016f);
+
+	virtual void OnUpdateTransform();
+	virtual void Animate(float fElapsedTime);
+
+	const XMFLOAT3& GetPosition() const { return m_xmf3Position; }
+
+	const XMFLOAT3& GetRight() const { return m_xmf3Right; }
+	const XMFLOAT3& GetUp() const { return m_xmf3Up; }
+	const XMFLOAT3& GetLook() const { return m_xmf3Look; }
+
+private:
+	CPlayer*	m_pPlayer;
+
+	XMFLOAT3	m_xmf3Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMFLOAT3	m_xmf3Right = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	XMFLOAT3	m_xmf3Up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	XMFLOAT3	m_xmf3Look = XMFLOAT3(0.0f, 0.0f, 1.0f);
+
+	XMFLOAT3	m_xmf3Direction = XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+	float		m_fFriction = 125.0f;
+
+	float       m_fPitch = 0.0f;
+	float       m_fYaw = 0.0f;
+	float       m_fRoll = 0.0f;
+	float		m_fMaxSpeed = 20.0f;
+	float		m_fCurSpeed = 0.f;
+	float		m_fMaxRotationSpeed = 50.f;
+	float		m_fRange = 20.0f;
+};

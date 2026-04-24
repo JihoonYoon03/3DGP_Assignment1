@@ -6,7 +6,7 @@
 class CGameTimer;
 class CGameFramework;
 
-enum class SceneType { title, stage, exit, end };
+enum class SceneType { title, stage, exit, TypeMax };
 
 // ===============================================================
 class CScene {
@@ -81,6 +81,8 @@ public:
 	virtual void BuildObjects() override;
 
 	void FireBullet(CGameObject* pLockedObject);
+
+	virtual void Animate(float fElapsedTime) override;
 
 	virtual void OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam) override;
 	virtual void OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam) override;

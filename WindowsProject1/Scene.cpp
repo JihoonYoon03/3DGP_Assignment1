@@ -188,7 +188,7 @@ void CSceneTitle::BuildObjects()
 		});
 	objects.push_back(newObject);
 
-	m_mapObjects.emplace(eObjType::UI, std::move(objects));
+	m_mapObjects.emplace(eObjType::UI, objects);
 	objects.clear();
 }
 
@@ -246,62 +246,32 @@ void CSceneStage::BuildObjects()
 {
 	CExplosiveObject::PrepareExplosion();
 
+	CMesh* pAirplaneMesh = new CMesh(L"../Resources/F22_low.obj", 2.0f);
 	CCubeMesh* pCubeMesh = new CCubeMesh(4.0f, 4.0f, 4.0f);
 
 	std::vector<CGameObject*> objects;
-	objects.reserve(6);
+	objects.reserve(3);
 
-	CGameObject* newObject = new CExplosiveObject();
-	newObject->SetMesh(pCubeMesh);
-	newObject->SetColor(RGB(255, 0, 0));
-	newObject->SetPosition(-13.5f, 0.0f, +14.0f);
-	newObject->SetRotationAxis(XMFLOAT3(1.0f, 1.0f, 0.0f));
-	newObject->SetRotationSpeed(90.0f);
-	newObject->SetMovingDirection(XMFLOAT3(1.0f, 0.0f, 0.0f));
-	newObject->SetMovingSpeed(0.0f);
+	CGameObject* newObject = new CEnemyAirplane(m_pPlayer);
+	newObject->SetMesh(pAirplaneMesh);
+	newObject->SetColor(RGB(255, 50, 50));
+	static_cast<CEnemyAirplane*>(newObject)->SetPosition(0.0f, 0.0f, 150.0f);
 	objects.push_back(newObject);
 
-	newObject = new CExplosiveObject();
-	newObject->SetMesh(pCubeMesh);
-	newObject->SetColor(RGB(0, 0, 255));
-	newObject->SetPosition(+13.5f, 0.0f, +14.0f);
-	newObject->SetRotationAxis(XMFLOAT3(0.0f, 1.0f, 1.0f));
-	newObject->SetRotationSpeed(180.0f);
-	newObject->SetMovingDirection(XMFLOAT3(-1.0f, 0.0f, 0.0f));
-	newObject->SetMovingSpeed(0.0f);
+	newObject = new CEnemyAirplane(m_pPlayer);
+	newObject->SetMesh(pAirplaneMesh);
+	newObject->SetColor(RGB(255, 50, 50));
+	static_cast<CEnemyAirplane*>(newObject)->SetPosition(100.0f, 50.0f, 200.0f);
 	objects.push_back(newObject);
 
-	newObject = new CExplosiveObject();
-	newObject->SetMesh(pCubeMesh);
-	newObject->SetColor(RGB(0, 255, 0));
-	newObject->SetPosition(0.0f, +5.0f, 20.0f);
-	newObject->SetRotationAxis(XMFLOAT3(1.0f, 0.0f, 1.0f));
-	newObject->SetRotationSpeed(30.15f);
-	newObject->SetMovingDirection(XMFLOAT3(1.0f, -1.0f, 0.0f));
-	newObject->SetMovingSpeed(0.0f);
+	newObject = new CEnemyAirplane(m_pPlayer);
+	newObject->SetMesh(pAirplaneMesh);
+	newObject->SetColor(RGB(255, 50, 50));
+	static_cast<CEnemyAirplane*>(newObject)->SetPosition(30.0f, -70.0f, 300.0f);
 	objects.push_back(newObject);
 
-	newObject = new CExplosiveObject();
-	newObject->SetMesh(pCubeMesh);
-	newObject->SetColor(RGB(0, 255, 255));
-	newObject->SetPosition(0.0f, 0.0f, 40.0f);
-	newObject->SetRotationAxis(XMFLOAT3(0.0f, 0.0f, 1.0f));
-	newObject->SetRotationSpeed(40.6f);
-	newObject->SetMovingDirection(XMFLOAT3(0.0f, 0.0f, 1.0f));
-	newObject->SetMovingSpeed(0.0f);
-	objects.push_back(newObject);
+	m_mapObjects.emplace(eObjType::Enemy, objects);
 
-	newObject = new CExplosiveObject();
-	newObject->SetMesh(pCubeMesh);
-	newObject->SetColor(RGB(128, 0, 255));
-	newObject->SetPosition(10.0f, 10.0f, 50.0f);
-	newObject->SetRotationAxis(XMFLOAT3(0.0f, 1.0f, 1.0f));
-	newObject->SetRotationSpeed(50.06f);
-	newObject->SetMovingDirection(XMFLOAT3(0.0f, 1.0f, 1.0f));
-	newObject->SetMovingSpeed(0.0f);
-	objects.push_back(newObject);
-
-	m_mapObjects.emplace(eObjType::Explosive, std::move(objects));
 	objects.clear();
 
 	// ÃÑ¾Ë ÀåÀü
@@ -329,6 +299,18 @@ void CSceneStage::BuildObjects()
 void CSceneStage::FireBullet(CGameObject* pLockedObject)
 {
 	static_cast<CAirplanePlayer*>(m_pPlayer)->FireBullet(pLockedObject, m_mapObjects.at(eObjType::Bullet));
+}
+
+void CSceneStage::Animate(float fElapsedTime)
+{
+	for (auto& vObject : m_mapObjects) {
+		for (auto& object : vObject.second) {
+			if (object->isActive())
+				object->Animate(fElapsedTime);
+		}
+	}
+
+	CheckCollision(eObjType::Bullet, eObjType::Enemy);
 }
 
 void CSceneStage::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
