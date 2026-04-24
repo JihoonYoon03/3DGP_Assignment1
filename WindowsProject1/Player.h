@@ -85,7 +85,7 @@ public:
 	void SetPosition(float x, float y, float z);
 
 	// 바라보는 지점 입력받아 기저벡터 갱신
-	void LookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up);
+	void SmoothTurn(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up);
 
 	//void UpdateDirection(DWORD dwDirection, float elapsedTime);
 	void Move(float elapsedTime);
@@ -102,7 +102,7 @@ public:
 	const XMFLOAT3& GetLook() const { return m_xmf3Look; }
 
 private:
-	CPlayer*	m_pPlayer;
+	CPlayer*	m_pPlayer = nullptr;
 
 	XMFLOAT3	m_xmf3Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	XMFLOAT3	m_xmf3Right = XMFLOAT3(1.0f, 0.0f, 0.0f);
@@ -111,13 +111,14 @@ private:
 
 	XMFLOAT3	m_xmf3Direction = XMFLOAT3(0.0f, 0.0f, 0.0f);
 
-	float		m_fFriction = 125.0f;
+	float		m_fFriction = 2.0f;
 
 	float       m_fPitch = 0.0f;
 	float       m_fYaw = 0.0f;
 	float       m_fRoll = 0.0f;
 	float		m_fMaxSpeed = 20.0f;
 	float		m_fCurSpeed = 0.f;
-	float		m_fMaxRotationSpeed = 50.f;
+	float		m_fMinSpeed = 5.0f;
+	float		m_fTurnLerp = 0.1f;
 	float		m_fRange = 20.0f;
 };

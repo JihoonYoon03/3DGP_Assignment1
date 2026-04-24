@@ -231,13 +231,12 @@ void CAirplanePlayer::FireBullet(CGameObject* pLockedObject, std::vector<CGameOb
 
 CEnemyAirplane::CEnemyAirplane()
 {
-	m_fRotationSpeed = m_fMaxRotationSpeed;
 }
 
 CEnemyAirplane::CEnemyAirplane(CPlayer* pPlayer)
 {
 	m_pPlayer = pPlayer;
-	m_fRotationSpeed = m_fMaxRotationSpeed;
+	m_fCurSpeed = m_fMaxSpeed;
 }
 
 void CEnemyAirplane::SetPosition(float x, float y, float z)
@@ -247,7 +246,7 @@ void CEnemyAirplane::SetPosition(float x, float y, float z)
 	CGameObject::SetPosition(x, y, z);
 }
 
-void CEnemyAirplane::LookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up)
+void CEnemyAirplane::SmoothTurn(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up)
 {
 	// 영벡터 방지용 코드
 	if (Vector3::Equal(GetPosition(), xmf3LookAt)) return;
@@ -259,38 +258,50 @@ void CEnemyAirplane::LookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up)
 	XMVECTORF32 xmf32vUp = { xmf4x4View._12, xmf4x4View._22, xmf4x4View._32, 0.0f };
 	XMVECTORF32 xmf32vLook = { xmf4x4View._13, xmf4x4View._23, xmf4x4View._33, 0.0f };
 
-	XMStoreFloat3(&m_xmf3Right, XMVector3Normalize(xmf32vRight));
-	XMStoreFloat3(&m_xmf3Up, XMVector3Normalize(xmf32vUp));
-	XMStoreFloat3(&m_xmf3Look, XMVector3Normalize(xmf32vLook));
+	XMStoreFloat3(&m_xmf3Look, XMVector3Normalize(XMVectorLerp(XMVector3Normalize(XMLoadFloat3(&m_xmf3Look)), XMVector3Normalize(xmf32vLook), m_fTurnLerp)));
+	m_xmf3Right = Vector3::CrossProduct(XMFLOAT3(0.f, 1.f, 0.f), m_xmf3Look, true);
+	m_xmf3Up	= Vector3::CrossProduct(m_xmf3Look, m_xmf3Right, true);
 }
 
 void CEnemyAirplane::Move(float elapsedTime)
 {
 	// deltatime 반영해서 속도만큼 이동
-	XMStoreFloat3(&m_xmf3Position, XMVectorAdd(XMLoadFloat3(&m_xmf3Position), XMLoadFloat3(&m_xmf3Look) * m_fMaxSpeed * elapsedTime));
+	XMStoreFloat3(&m_xmf3Position, XMVectorAdd(XMLoadFloat3(&m_xmf3Position), XMLoadFloat3(&m_xmf3Look) * m_fCurSpeed * elapsedTime));
 }
 
 void CEnemyAirplane::Update(float fTimeElapsed)
 {
-	// 타깃을 향해 회전
-	LookAt(m_pPlayer->GetPosition(), XMFLOAT3(0.0f, 1.0f, 0.0f));
+	float distance = Vector3::Length(Vector3::Subtract(m_pPlayer->GetPosition(), GetPosition()));
+	
+	if (distance > m_fRange) {
+		// 타깃을 향해 회전
+		SmoothTurn(m_pPlayer->GetPosition(), XMFLOAT3(0.0f, 1.0f, 0.0f));
+	}
+	else {
+		XMFLOAT3 avoid = m_xmOOBB.Extents;
+		avoid.x *= 4;
+		avoid.z = 0;
+		avoid.y *= 4;
+		SmoothTurn(Vector3::Add(m_pPlayer->GetPosition(), avoid), XMFLOAT3(0.0f, 1.0f, 0.0f));
+	}
 
 	// 타깃과의 거리가 먼 상태면, 최대 속도로 이동
 	OutputDebugStringW(
 		(std::to_wstring(Vector3::Length(Vector3::Subtract(m_pPlayer->GetPosition(), GetPosition()))) + L"\n").c_str());
-	if (Vector3::Length(Vector3::Subtract(m_pPlayer->GetPosition(), GetPosition())) > m_fRange) {
+	if (distance > m_fRange) {
 		m_fCurSpeed = m_fMaxSpeed;
-		Move(fTimeElapsed);
 	}
 	else {
-		// 마찰 계수에 따른 감속 구현
-		XMVECTOR xmvVelocity = XMLoadFloat3(&m_xmf3Direction);
-		XMVECTOR xmvDeceleration = XMVector3Normalize(XMVectorScale(xmvVelocity, -1.0f));
-		float fLength = XMVectorGetX(XMVector3Length(xmvVelocity));
 		float fDeceleration = m_fFriction * fTimeElapsed;
-		if (fDeceleration > fLength) fDeceleration = fLength;
-		XMStoreFloat3(&m_xmf3Direction, XMVectorAdd(xmvVelocity, XMVectorScale(xmvDeceleration, fDeceleration)));
+		if (fDeceleration > m_fCurSpeed) fDeceleration = m_fCurSpeed;
+		if (m_fCurSpeed > m_fMinSpeed) {
+			m_fCurSpeed -= fDeceleration;
+		}
+		else {
+			m_fCurSpeed = m_fMinSpeed;
+		}
 	}
+	Move(fTimeElapsed);
 }
 
 void CEnemyAirplane::OnUpdateTransform()
@@ -308,5 +319,5 @@ void CEnemyAirplane::Animate(float fElapsedTime)
 	Update(fElapsedTime);
 	OnUpdateTransform();
 
-	CGameObject::Animate(fElapsedTime);
+	CExplosiveObject::Animate(fElapsedTime);
 }
