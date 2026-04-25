@@ -171,6 +171,7 @@ void CSceneTitle::BuildObjects()
 	newObject->SetMesh(pAirplaneMesh);
 	newObject->SetColor(RGB(60, 60, 70));
 	newObject->SetPosition(0.0f, 1.0f, 0.0f);
+	newObject->Rotate(-90.f, 0.f, 0.f);
 	newObject->SetRotationAxis(XMFLOAT3(0.0f, 1.0f, 0.0f));
 	//newObject->SetRotationSpeed(90.0f);
 	objects.push_back(newObject);
@@ -247,10 +248,10 @@ void CSceneStage::BuildObjects()
 	CExplosiveObject::PrepareExplosion();
 
 	CMesh* pAirplaneMesh = new CMesh(L"../Resources/F22_low.obj", 2.0f);
-	CCubeMesh* pCubeMesh = new CCubeMesh(4.0f, 4.0f, 4.0f);
+	CCubeMesh* pCubeMesh = new CCubeMesh(1.0f, 1.0f, 1.0f);
 
 	std::vector<CGameObject*> objects;
-	objects.reserve(3);
+	objects.reserve(300);
 
 	CGameObject* newObject = new CEnemyAirplane(m_pPlayer);
 	newObject->SetMesh(pAirplaneMesh);
@@ -271,7 +272,20 @@ void CSceneStage::BuildObjects()
 	objects.push_back(newObject);
 
 	m_mapObjects.emplace(eObjType::Enemy, objects);
+	objects.clear();
 
+	std::uniform_int_distribution disInt{ 0, 255 };
+	std::uniform_real_distribution disFloat2{ -500.f, 500.f };
+
+	for (int i = 0; i < 300; ++i) {
+		newObject = new CExplosiveObject();
+		newObject->SetMesh(pCubeMesh);
+		newObject->SetColor(RGB(disInt(rde), disInt(rde), disInt(rde)));
+		newObject->SetPosition(disFloat2(rde), disFloat2(rde), disFloat2(rde));
+		objects.push_back(newObject);
+	}
+
+	m_mapObjects.emplace(eObjType::Explosive, objects);
 	objects.clear();
 
 	// 총알 장전
@@ -311,6 +325,7 @@ void CSceneStage::Animate(float fElapsedTime)
 	}
 
 	CheckCollision(eObjType::Bullet, eObjType::Enemy);
+	CheckCollision(eObjType::Bullet, eObjType::Explosive);
 }
 
 void CSceneStage::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
@@ -321,9 +336,6 @@ void CSceneStage::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wP
 	case WM_LBUTTONDOWN:
 		::SetCapture(hWnd);
 		::GetCursorPos(&oldCursorPos);
-		if (nMessageID == WM_LBUTTONDOWN) {
-			FireBullet(nullptr);
-		}
 		break;
 	case WM_LBUTTONUP:
 	case WM_RBUTTONUP:
@@ -357,6 +369,9 @@ void CSceneStage::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM
 		}
 		case 'A':
 			break;
+		case VK_SPACE:
+			FireBullet(nullptr);
+			break;
 		default:
 			break;
 		}
@@ -368,17 +383,18 @@ void CSceneStage::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM
 
 void CSceneStage::ProcessInput(HWND& hWnd, UCHAR* pKeyBuffer, CGameTimer& timer)
 {
+	float tElapsed = timer.GetTimeElapsed();
 	if (GetKeyboardState(pKeyBuffer))
 	{
 		DWORD dwDirection = 0;
 		if (pKeyBuffer['W'] & 0xF0) dwDirection |= DIR_FORWARD;
-		if (pKeyBuffer['S'] & 0xF0) dwDirection |= DIR_BACKWARD;
+		//if (pKeyBuffer['S'] & 0xF0) dwDirection |= DIR_BACKWARD;
 		if (pKeyBuffer['A'] & 0xF0) dwDirection |= DIR_LEFT;
 		if (pKeyBuffer['D'] & 0xF0) dwDirection |= DIR_RIGHT;
-		if (pKeyBuffer[VK_SPACE] & 0xF0) dwDirection |= DIR_UP;
-		if (pKeyBuffer[VK_CONTROL] & 0xF0) dwDirection |= DIR_DOWN;
+		//if (pKeyBuffer[VK_SPACE] & 0xF0) dwDirection |= DIR_UP;
+		//if (pKeyBuffer[VK_CONTROL] & 0xF0) dwDirection |= DIR_DOWN;
 
-		if (dwDirection) m_pPlayer->Move(dwDirection, timer.GetTimeElapsed());
+		if (dwDirection) m_pPlayer->Move(dwDirection, tElapsed);
 	}
 
 	if (GetCapture() == hWnd)
@@ -386,15 +402,14 @@ void CSceneStage::ProcessInput(HWND& hWnd, UCHAR* pKeyBuffer, CGameTimer& timer)
 		SetCursor(NULL);
 		POINT ptCursorPos;
 		GetCursorPos(&ptCursorPos);
-		float cxMouseDelta = (float)(ptCursorPos.x - oldCursorPos.x) / 3.0f;
-		float cyMouseDelta = (float)(ptCursorPos.y - oldCursorPos.y) / 3.0f;
+
+		// 마우스 델타 값 구하기
+		float cxMouseDelta = (float)(ptCursorPos.x - oldCursorPos.x) * MOUSE_SENSITIVITY * tElapsed;
+		float cyMouseDelta = (float)(ptCursorPos.y - oldCursorPos.y) * MOUSE_SENSITIVITY * tElapsed;
 		SetCursorPos(oldCursorPos.x, oldCursorPos.y);
 		if (cxMouseDelta || cyMouseDelta)
 		{
-			if (pKeyBuffer[VK_RBUTTON] & 0xF0)
-				m_pPlayer->Rotate(cyMouseDelta, 0.0f, -cxMouseDelta);
-			else
-				m_pPlayer->Rotate(cyMouseDelta, cxMouseDelta, 0.0f);
+			static_cast<CAirplanePlayer*>(m_pPlayer)->Rotate(-cxMouseDelta, cyMouseDelta);
 		}
 	}
 

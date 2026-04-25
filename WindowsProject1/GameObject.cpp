@@ -77,16 +77,22 @@ void CGameObject::LookAt(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3Up)
 
 void CGameObject::Rotate(float fPitch, float fYaw, float fRoll)
 {
-	XMMATRIX xmmRotate = XMMatrixRotationRollPitchYaw(
-		XMConvertToRadians(fPitch), XMConvertToRadians(fYaw), XMConvertToRadians(fRoll));
+	XMMATRIX xmmRotate = XMMatrixRotationRollPitchYaw(XMConvertToRadians(fPitch), XMConvertToRadians(fYaw), XMConvertToRadians(fRoll));
 	XMStoreFloat4x4(&m_xmf4x4World, XMMatrixMultiply(xmmRotate, XMLoadFloat4x4(&m_xmf4x4World)));
 }
 
 void CGameObject::Rotate(XMFLOAT3& xmf3RotationAxis, float fAngle)
 {
-	XMMATRIX xmmRotate = XMMatrixRotationAxis(
-		XMLoadFloat3(&xmf3RotationAxis), XMConvertToRadians(fAngle));
+	XMMATRIX xmmRotate = XMMatrixRotationAxis(XMLoadFloat3(&xmf3RotationAxis), XMConvertToRadians(fAngle));
 	XMStoreFloat4x4(&m_xmf4x4World, XMMatrixMultiply(xmmRotate, XMLoadFloat4x4(&m_xmf4x4World)));
+}
+
+void CGameObject::Rotate(XMVECTOR& quaternion)
+{
+	XMFLOAT4X4 xmf4x4Rotate = Matrix4x4::Identity();
+	XMStoreFloat4x4(&xmf4x4Rotate, XMMatrixRotationQuaternion(quaternion));
+	xmf4x4Rotate._41 = m_xmf4x4World._41; xmf4x4Rotate._42 = m_xmf4x4World._42; xmf4x4Rotate._43 = m_xmf4x4World._43;
+	m_xmf4x4World = xmf4x4Rotate;
 }
 
 void CGameObject::Animate(float fElapsedTime)

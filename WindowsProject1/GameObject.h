@@ -33,6 +33,7 @@ public:
 
 	void Rotate(float fPitch = 10.f, float fYaw = 10.f, float fRoll = 10.f);
 	void Rotate(XMFLOAT3& xmf3Axis, float fAngle);
+	void Rotate(XMVECTOR& quaternion);
 
 	virtual void OnUpdateTransform() { }
 	

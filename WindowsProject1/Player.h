@@ -38,7 +38,7 @@ public:
 
 	const XMFLOAT3& GetCameraOffset() const { return m_xmf3CameraOffset; }
 
-private:
+protected:
 	XMFLOAT3	m_xmf3Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	XMFLOAT3	m_xmf3Right = XMFLOAT3(1.0f, 0.0f, 0.0f);
 	XMFLOAT3	m_xmf3Up = XMFLOAT3(0.0f, 1.0f, 0.0f);
@@ -52,7 +52,7 @@ private:
 	float       m_fPitch = 0.0f;
 	float       m_fYaw = 0.0f;
 	float       m_fRoll = 0.0f;
-	float		m_maxSpeed = 15.0f;
+	float		m_maxSpeed = 50.0f;
 
 	CCamera*	m_pCamera = nullptr;
 };
@@ -66,12 +66,18 @@ public:
 	const unsigned int getMaxAmmo() const { return m_ammo; }
 	const float getRange() const { return m_bulletRange; }
 
+	void Rotate(float MouseDeltaX, float MouseDeltaY);
+
 	virtual void OnUpdateTransform();
 	virtual void Animate(float fElapsedTime);
 	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
 
 private:
 	float			m_bulletRange = 150.f;
+
+	float			m_fPitchSpeed = 10.f;
+	float			m_fRollSpeed = 15.f;
+
 	unsigned int	m_ammo = 50;
 };
 
@@ -116,9 +122,9 @@ private:
 	float       m_fPitch = 0.0f;
 	float       m_fYaw = 0.0f;
 	float       m_fRoll = 0.0f;
-	float		m_fMaxSpeed = 20.0f;
+	float		m_fMaxSpeed = 50.0f;
 	float		m_fCurSpeed = 0.f;
-	float		m_fMinSpeed = 5.0f;
-	float		m_fTurnLerp = 0.1f;
-	float		m_fRange = 20.0f;
+	float		m_fMinSpeed = 30.0f;
+	float		m_fTurnLerp = 0.02f;
+	float		m_fRange = 50.0f;
 };

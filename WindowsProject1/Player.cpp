@@ -34,11 +34,11 @@ void CPlayer::Move(DWORD dwDirection, float elapsedTime)
 	{
 		XMFLOAT3 xmf3Shift = XMFLOAT3(0, 0, 0);
 		if (dwDirection & DIR_FORWARD) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Look), m_maxSpeed * elapsedTime)));
-		if (dwDirection & DIR_BACKWARD) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Look), -m_maxSpeed * elapsedTime)));
-		if (dwDirection & DIR_RIGHT) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Right), m_maxSpeed * elapsedTime)));
-		if (dwDirection & DIR_LEFT) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Right), -m_maxSpeed * elapsedTime)));
-		if (dwDirection & DIR_UP) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Up), m_maxSpeed * elapsedTime)));
-		if (dwDirection & DIR_DOWN) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Up), -m_maxSpeed * elapsedTime)));
+		//if (dwDirection & DIR_BACKWARD) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Look), -m_maxSpeed * elapsedTime)));
+		//if (dwDirection & DIR_RIGHT) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Right), m_maxSpeed * elapsedTime)));
+		//if (dwDirection & DIR_LEFT) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Right), -m_maxSpeed * elapsedTime)));
+		//if (dwDirection & DIR_UP) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Up), m_maxSpeed * elapsedTime)));
+		//if (dwDirection & DIR_DOWN) XMStoreFloat3(&xmf3Shift, XMVectorAdd(XMLoadFloat3(&xmf3Shift), XMVectorScale(XMLoadFloat3(&m_xmf3Up), -m_maxSpeed * elapsedTime)));
 
 		Move(xmf3Shift, true);
 	}
@@ -154,9 +154,7 @@ CAirplanePlayer::~CAirplanePlayer()
 
 void CAirplanePlayer::OnUpdateTransform()
 {
-	CPlayer::OnUpdateTransform();
-
-	m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(DegreeToRadian(-90.0f), DegreeToRadian(180.0f), DegreeToRadian(0.0f)), m_xmf4x4World);
+	m_xmf4x4World._41 = m_xmf3Position.x; m_xmf4x4World._42 = m_xmf3Position.y; m_xmf4x4World._43 = m_xmf3Position.z;
 }
 
 void CAirplanePlayer::Animate(float fElapsedTime)
@@ -209,7 +207,7 @@ void CAirplanePlayer::FireBullet(CGameObject* pLockedObject, std::vector<CGameOb
 		XMFLOAT3 xmf3Direction = GetLook();
 		XMFLOAT3 xmf3FirePosition = Vector3::Add(xmf3Position, Vector3::ScalarProduct(xmf3Direction, 6.0f, false));
 
-		pBulletObject->SetWorldMatrix(Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(DegreeToRadian(-90.f), 0.f, 0.f), m_xmf4x4World));
+		pBulletObject->SetWorldMatrix(Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f), m_xmf4x4World));
 
 		pBulletObject->SetFirePosition(xmf3FirePosition);
 		pBulletObject->SetMovingDirection(xmf3Direction);
@@ -222,6 +220,39 @@ void CAirplanePlayer::FireBullet(CGameObject* pLockedObject, std::vector<CGameOb
 			pBulletObject->SetColor(RGB(0, 0, 255));
 		}
 	}
+}
+
+void CAirplanePlayer::Rotate(float MouseDeltaX, float MouseDeltaY)
+{
+	if (MouseDeltaX > m_fRollSpeed) MouseDeltaX = m_fRollSpeed;
+	if (MouseDeltaY > m_fPitchSpeed) MouseDeltaY = m_fPitchSpeed;
+
+	// 회전이 누적될 항등 쿼터니언
+	static XMVECTOR curQuat = XMQuaternionIdentity();
+	
+	// 기본 축 생성
+	XMVECTOR baseForward	{ 0.f, 0.f, 1.f, 0.f };
+	XMVECTOR baseRight		{ 1.f, 0.f, 0.f, 0.f };
+	XMVECTOR baseUp			{ 0.f, 1.f, 0.f, 0.f };
+
+	// 기본 축에서 누적된 회전을 적용해 현재 오브젝트 방향 구하기
+	XMVECTOR curForward = XMVector3Rotate(baseForward, curQuat);
+	XMVECTOR curRight = XMVector3Rotate(baseRight, curQuat);
+
+	// 오브젝트 기준 좌표축을 회전축으로 하여 마우스 델타만큼 회전하는 쿼터니언 구하기
+	XMVECTOR qPitch = XMQuaternionRotationAxis(curRight, MouseDeltaY);
+	XMVECTOR qRoll = XMQuaternionRotationAxis(curForward, MouseDeltaX);
+
+	// 최종 쿼터니언 구하기
+	curQuat = XMQuaternionMultiply(curQuat, qPitch);
+	curQuat = XMQuaternionMultiply(curQuat, qRoll);
+
+	XMStoreFloat3(&m_xmf3Look, XMVector3Rotate(baseForward, curQuat));
+	XMStoreFloat3(&m_xmf3Up, XMVector3Rotate(baseUp, curQuat));
+	XMStoreFloat3(&m_xmf3Right, XMVector3Rotate(baseRight, curQuat));
+	
+	CGameObject::Rotate(curQuat);
+	m_pCamera->Rotate(curQuat);
 }
 
 
@@ -310,8 +341,6 @@ void CEnemyAirplane::OnUpdateTransform()
 	m_xmf4x4World._21 = m_xmf3Up.x; m_xmf4x4World._22 = m_xmf3Up.y; m_xmf4x4World._23 = m_xmf3Up.z;
 	m_xmf4x4World._31 = m_xmf3Look.x; m_xmf4x4World._32 = m_xmf3Look.y; m_xmf4x4World._33 = m_xmf3Look.z;
 	m_xmf4x4World._41 = m_xmf3Position.x; m_xmf4x4World._42 = m_xmf3Position.y; m_xmf4x4World._43 = m_xmf3Position.z;
-
-	m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(DegreeToRadian(-90.0f), DegreeToRadian(180.0f), DegreeToRadian(0.0f)), m_xmf4x4World);
 }
 
 void CEnemyAirplane::Animate(float fElapsedTime)

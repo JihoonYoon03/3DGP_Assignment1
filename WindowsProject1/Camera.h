@@ -44,6 +44,7 @@ public:
 	void Move(const XMFLOAT3& xmf3Shift);
 	void Move(float x, float y, float z);
 	void Rotate(float fPitch = 0.f, float fYaw = 0.f, float fRoll = 0.f);
+	void Rotate(XMVECTOR& quaternion);
 	void Update(CPlayer* pPlayer, XMFLOAT3& xmf3LookAt, float fTimeElapsed = 0.016f);
 
 	bool IsInFrustum(BoundingOrientedBox& xmBoundingBox);

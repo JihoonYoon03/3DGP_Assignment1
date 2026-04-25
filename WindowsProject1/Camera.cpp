@@ -141,6 +141,13 @@ void CCamera::Rotate(float fPitch, float fYaw, float fRoll)
 	}
 }
 
+void CCamera::Rotate(XMVECTOR& quaternion)
+{
+	XMStoreFloat3(&m_xmf3Look, XMVector3Rotate(XMVECTOR{0.f, 0.f, 1.f}, quaternion));
+	XMStoreFloat3(&m_xmf3Up, XMVector3Rotate(XMVECTOR{0.f, 1.f, 0.f}, quaternion));
+	XMStoreFloat3(&m_xmf3Right, XMVector3Rotate(XMVECTOR{1.f, 0.f, 0.f}, quaternion));
+}
+
 
 void CCamera::Update(CPlayer* pPlayer, XMFLOAT3& xmf3LookAt, float fTimeElapsed)
 {
