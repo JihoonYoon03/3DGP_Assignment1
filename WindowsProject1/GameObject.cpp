@@ -17,12 +17,37 @@ XMVECTOR RandomUnitVectorOnSphere()
 	}
 }
 
+CGameObject::CGameObject()
+{
+}
+
 CGameObject::~CGameObject()
 {
 	if (m_pMesh) m_pMesh->Release();
 
 	if (hPen)	::DeleteObject(hPen);
 	if (hBrush) ::DeleteObject(hBrush);
+}
+
+void CGameObject::SetColor(DWORD dwColor)
+{
+	m_dwColor = dwColor;
+
+	// 명도에 따른 브러쉬 생성
+	hPens.reserve(DIFFUSE_LEVELS);
+	hBrushes.reserve(DIFFUSE_LEVELS);
+
+	BYTE r = GetRValue(m_dwColor);
+	BYTE g = GetGValue(m_dwColor);
+	BYTE b = GetBValue(m_dwColor);
+
+	for (int i = 0; i < DIFFUSE_LEVELS; ++i) {
+		float fIntensity = pow((float)i / (float)DIFFUSE_LEVELS * 2, 2);
+		COLORREF ShadeColor = RGB(min(r * fIntensity, 255), min(g * fIntensity, 255), min(b * fIntensity, 255));
+
+		hPens.emplace_back(::CreatePen(PS_SOLID, 0, ShadeColor));
+		hBrushes.emplace_back(::CreateSolidBrush(ShadeColor));
+	}
 }
 
 void CGameObject::SetMesh(CMesh* pMesh)
@@ -116,18 +141,19 @@ bool CGameObject::FrustumCullingTest(CCamera* pCamera) {
 }
 
 // render called by instance
-void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos)
 {
-	CGameObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+	CGameObject::Render(hDCFrameBuffer, pCamera, dirLightPos, &m_xmf4x4World, m_pMesh);
 }
 
-void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
+void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
 {
 	if (pMesh) {
 		CGraphicsPipeline::SetWorldTransform(pxmf4x4World);
 		
 		XMMATRIX mtxWorldInv = XMMatrixInverse(nullptr, XMLoadFloat4x4(pxmf4x4World));
 		XMVECTOR vLocalCameraPos = XMVector3TransformCoord(XMLoadFloat3(&pCamera->GetPosition()), mtxWorldInv);
+		XMVECTOR vLocalLightPos = XMVector3TransformCoord(XMLoadFloat3(&dirLightPos), mtxWorldInv);
 
 		if (not hPen) {
 			hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
@@ -137,13 +163,13 @@ void CGameObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4
 			//hBrush = ::CreateSolidBrush(RGB(255, 255, 255));
 		}
 		
-		HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
-		HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
+		//HPEN hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
+		//HBRUSH hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
 
-		pMesh->Render(hDCFrameBuffer, pCamera, vLocalCameraPos);
+		pMesh->Render(hDCFrameBuffer, pCamera, vLocalCameraPos, vLocalLightPos, hPens, hBrushes);
 
-		::SelectObject(hDCFrameBuffer, hOldPen);
-		::SelectObject(hDCFrameBuffer, hOldBrush);
+		//::SelectObject(hDCFrameBuffer, hOldPen);
+		//::SelectObject(hDCFrameBuffer, hOldBrush);
 	}
 }
 
@@ -182,9 +208,9 @@ CWallsObject::~CWallsObject()
 
 }
 
-void CWallsObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+void CWallsObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos)
 {
-	CGameObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+	CGameObject::Render(hDCFrameBuffer, pCamera, dirLightPos, &m_xmf4x4World, m_pMesh);
 }
 
 
@@ -245,16 +271,16 @@ void CExplosiveObject::Animate(float fElapsedTime)
 	}
 }
 
-void CExplosiveObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+void CExplosiveObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos)
 {
 	if (m_bBlowingUp) {
 		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
 			// TODO: 파티클 출력 시스템 분리
-			CGameObject::Render(hDCFrameBuffer, pCamera, &m_pxmf4x4Transforms[i], m_pExplosionMesh);
+			CGameObject::Render(hDCFrameBuffer, pCamera, dirLightPos, &m_pxmf4x4Transforms[i], m_pExplosionMesh);
 		}
 	}
 	else {
-		CGameObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+		CGameObject::Render(hDCFrameBuffer, pCamera, dirLightPos, &m_xmf4x4World, m_pMesh);
 	}
 }
 
@@ -355,18 +381,19 @@ CUIObject::~CUIObject()
 }
 
 // render called by instance
-void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos)
 {
-	CUIObject::Render(hDCFrameBuffer, pCamera, &m_xmf4x4World, m_pMesh);
+	CUIObject::Render(hDCFrameBuffer, pCamera, dirLightPos, &m_xmf4x4World, m_pMesh);
 }
 
-void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
+void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
 {
 	if (pMesh) {
 		CGraphicsPipeline::SetWorldTransform(pxmf4x4World);
 
 		XMMATRIX mtxWorldInv = XMMatrixInverse(nullptr, XMLoadFloat4x4(pxmf4x4World));
 		XMVECTOR vLocalCameraPos = XMVector3TransformCoord(XMLoadFloat3(&pCamera->GetPosition()), mtxWorldInv);
+		XMVECTOR vLocalLightPos = XMVector3TransformCoord(XMLoadFloat3(&dirLightPos), mtxWorldInv);
 
 		if (not hPen) {
 			hPen = ::CreatePen(PS_SOLID, 0, m_dwColor);
@@ -395,8 +422,8 @@ void CUIObject::Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4
 			hOldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPen);
 			hOldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrush);
 		}
-
-		pMesh->Render(hDCFrameBuffer, pCamera, vLocalCameraPos);
+		
+		pMesh->Render(hDCFrameBuffer, pCamera, vLocalCameraPos, vLocalLightPos, hPens, hBrushes);
 
 		::SelectObject(hDCFrameBuffer, hOldPen);
 		::SelectObject(hDCFrameBuffer, hOldBrush);

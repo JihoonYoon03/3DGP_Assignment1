@@ -56,6 +56,7 @@ constexpr int FRAMEBUFFER_HEIGHT	= 480;
 
 #define EXPLOSION_DEBRISES		120
 #define MOUSE_SENSITIVITY		0.1f
+#define DIFFUSE_LEVELS			10
 
 //#define WIREFRAME_MODE
 

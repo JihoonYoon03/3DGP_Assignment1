@@ -6,13 +6,13 @@
 class CGameObject
 {
 public:
-	CGameObject() {}
+	CGameObject();
 	virtual ~CGameObject();
 
 	void SetActive(bool bActive) { m_bActive = bActive; }
 
 	void SetMesh(CMesh* pMesh);
-	void SetColor(DWORD dwColor) { m_dwColor = dwColor; }
+	void SetColor(DWORD dwColor);
 
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3& xmf3Position);
@@ -41,8 +41,8 @@ public:
 
 	virtual void Animate(float fElapsedTime);
 	bool FrustumCullingTest(CCamera* pCamera);
-	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
-	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh);
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos);
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh);
 
 	void GenerateRayForPicking(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection);
 	int PickObjectByRayIntersection(XMVECTOR& xmPickPosition, XMMATRIX& xmmtxView, float& pfHitDistance);
@@ -79,6 +79,9 @@ protected:
 	HPEN hPen = NULL;
 	HBRUSH hBrush = NULL;
 
+	// 색상에 따른 10단계 명도로 나뉜 펜과 브러쉬
+	std::vector<HPEN> hPens;
+	std::vector<HBRUSH> hBrushes;
 };
 
 class CExplosiveObject : public CGameObject
@@ -97,7 +100,7 @@ public:
 	float						m_fExplosionRotation = 720.0f;
 
 	void Animate(float fElapsedTime) override;
-	void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
+	void Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos) override;
 	void EventCollision(CGameObject* objCollided, const eObjType objType) override;
 
 public:
@@ -118,7 +121,7 @@ public:
 	BoundingOrientedBox			m_xmOOBBPlayerMoveCheck = BoundingOrientedBox();
 	XMFLOAT4					m_pxmf4WallPlanes[6];
 
-	void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
+	void Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos) override;
 };
 
 class CBulletObject : public CGameObject
@@ -159,12 +162,13 @@ public:
 	// 콜백을 설정하는 함수
 	void SetOnClickCallback(std::function<void()> callback) { m_OnClickCallback = callback; }
 
-	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera) override;
-	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh) override;
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos) override;
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh) override;
 
 	virtual void EventPicking() override;
 	virtual void EventBeginMouseHovering() { if (m_bCheckMouseHover) m_bMouseHover = true; }
 	virtual void EventEndMouseHovering() { m_bMouseHover = false; }
+
 private:
 	bool	m_bCheckMouseHover = false;
 	bool	m_bMouseHover = false;

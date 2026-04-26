@@ -136,7 +136,7 @@ void CScene::Render(HDC hDCFrameBuffer, CCamera* pCamera)
 
 	for (const auto& object : cullPassed) {
 		if (object->isActive())
-			object->Render(hDCFrameBuffer, pCamera);
+			object->Render(hDCFrameBuffer, pCamera, m_xmf3DirLightPos);
 	}
 }
 
@@ -146,6 +146,7 @@ CSceneTitle::CSceneTitle(CGameFramework* pFramework, CCamera* pCamera)
 	// ===============================================================
 {
 	m_pCamera = pCamera;
+	m_xmf3DirLightPos = { -1000.f, 1000.f, 0.f };
 }
 
 void CSceneTitle::Animate(float fElapsedTime)
@@ -241,6 +242,7 @@ CSceneStage::CSceneStage(CGameFramework* pFramework, CPlayer* player)
 	: CScene(pFramework, player)
 	// ===============================================================
 {
+	m_xmf3DirLightPos = { -1000.f, 10000.f, 10000.f };
 }
 
 void CSceneStage::BuildObjects()

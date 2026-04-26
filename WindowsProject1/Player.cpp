@@ -168,9 +168,9 @@ void CAirplanePlayer::Animate(float fElapsedTime)
 	*/
 }
 
-void CAirplanePlayer::Render(HDC hDCFrameBuffer, CCamera* pCamera)
+void CAirplanePlayer::Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos)
 {
-	CPlayer::Render(hDCFrameBuffer, pCamera);
+	CPlayer::Render(hDCFrameBuffer, pCamera, dirLightPos);
 
 	/*
 	for (auto& bullet : m_vBullets) {

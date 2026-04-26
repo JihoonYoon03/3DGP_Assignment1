@@ -70,7 +70,7 @@ public:
 
 	virtual void OnUpdateTransform();
 	virtual void Animate(float fElapsedTime);
-	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera);
+	virtual void Render(HDC hDCFrameBuffer, CCamera* pCamera, const XMFLOAT3& dirLightPos);
 
 private:
 	float			m_bulletRange = 150.f;

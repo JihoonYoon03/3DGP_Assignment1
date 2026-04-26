@@ -126,7 +126,7 @@ void Draw2DLine(HDC hDCFrameBuffer, XMFLOAT3& f3PrevProject, XMFLOAT3& f3CurProj
 	::LineTo(hDCFrameBuffer, (long)f3Cur.x, (long)f3Cur.y);
 }
 
-void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCameraPos)
+void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCameraPos, const XMVECTOR& dirLightPos, std::vector<HPEN>& hPens, std::vector<HBRUSH>& hBrushes)
 {
 	XMFLOAT3 f3InitProject, f3PrevProject, f3Intersect;
 	bool bPrevInside = false, bInitInside = false, bCurInside = false, bIntersectInside = false;
@@ -142,7 +142,7 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 		// 은면제거
 		// 매쉬 로컬 좌표계에서 평면 노멀과 카메라 look의 내적 수행
 		XMVECTOR normal = XMLoadFloat3(&triangle.m_Normal);
-		XMVECTOR look = XMVectorSubtract(XMLoadFloat3(&m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position), LocalCameraPos);
+		XMVECTOR look = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&m_Vertices[m_Indices[triangle.m_StartIndex]].m_xmf3Position), LocalCameraPos));
 
 		if (XMVectorGetX(XMVector3Dot(normal, look)) > 0.f) continue;
 
@@ -155,11 +155,6 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 
 		triangle.m_averageZ = (f3CurProject1.z + f3CurProject2.z + f3CurProject3.z) / 3;
 
-		// 카메라 뒤에 있다면 컬링
-		/*if (f3CurProject1.z < 0.f || f3CurProject2.z < 0.f || f3CurProject3.z < 0.f) {
-			OutputDebugStringW(std::wstring{ L"카메라 뒤로 넘어감 체킹\n" }.c_str());
-			continue;
-		}*/
 
 		// 렌더 대상 리스트에 해당 삼각형 저장
 		renderList.push_back(&triangle);
@@ -170,7 +165,19 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 		return a->m_averageZ > b->m_averageZ;
 		});
 
-	for (const auto* triangle : renderList) {
+	for (auto* triangle : renderList) {
+
+		// 평면 노멀과 빛 방향의 내적 수행
+		XMVECTOR normal = XMLoadFloat3(&triangle->m_Normal);
+		XMVECTOR look = XMVector3Normalize(XMVectorSubtract(dirLightPos, XMLoadFloat3(&m_Vertices[m_Indices[triangle->m_StartIndex]].m_xmf3Position)));
+
+		float NormalLookDot = XMVectorGetX(XMVector3Dot(normal, look));
+		if (NormalLookDot < 0.f) NormalLookDot = 0.f;
+
+		// 현재 삼각형 면의 명도 레벨 결정
+		int diffuseLevel = DIFFUSE_LEVELS * NormalLookDot;
+		if (diffuseLevel < 0) diffuseLevel = 0;
+		if (diffuseLevel >= DIFFUSE_LEVELS) diffuseLevel = DIFFUSE_LEVELS - 1;
 
 		// 모든 정점 원근 투영 변환 및 렌더링
 		XMFLOAT4X4 PerspectiveProject = camera->GetPerspectiveProjectMatrix();
@@ -189,7 +196,13 @@ void CMesh::Render(HDC hDCFrameBuffer, CCamera* camera, const XMVECTOR& LocalCam
 			{f3CurProject3.x, f3CurProject3.y},
 		};
 
+		HPEN oldPen = (HPEN)::SelectObject(hDCFrameBuffer, hPens[diffuseLevel]);
+		HBRUSH oldBrush = (HBRUSH)::SelectObject(hDCFrameBuffer, hBrushes[diffuseLevel]);
+
 		Polygon(hDCFrameBuffer, a, 3);
+
+		::SelectObject(hDCFrameBuffer, oldPen);
+		::SelectObject(hDCFrameBuffer, oldBrush);
 	}
 
 #else

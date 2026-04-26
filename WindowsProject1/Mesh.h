@@ -31,7 +31,7 @@ public:
 	void LoadMeshFromObj(const WCHAR* pstrFileName, float fScale);
 	void SetMesh(std::vector<CVertex>& vertices, std::vector<UINT>& indices);
 	
-	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera, const XMVECTOR& LocalCameraPos);
+	virtual void Render(HDC hDCFrameBuffer, class CCamera* camera, const XMVECTOR& LocalCameraPos, const XMVECTOR& dirLightPos, std::vector<HPEN>& hPens, std::vector<HBRUSH>& hBrushes);
 
 	bool RayIntersectionByTriangle(XMVECTOR& xmRayOrigin, XMVECTOR& xmRayDirection, XMVECTOR v0, XMVECTOR v1, XMVECTOR v2, float& fNearHitDistance);
 	bool CheckRayIntersection(XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection, float& fNearHitDistance);

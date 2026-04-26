@@ -45,6 +45,8 @@ protected:
 	// 게임 객체들의 개수와 게임 객체들의 리스트(배열)이다.
 	std::unordered_map<eObjType, std::vector<CGameObject*>> m_mapObjects;
 
+	XMFLOAT3 m_xmf3DirLightPos{ 0.f, 0.f, 0.f };
+
 	CPlayer* m_pPlayer = nullptr;
 	CGameFramework* m_pFramework = nullptr;
 
