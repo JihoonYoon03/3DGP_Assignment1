@@ -125,6 +125,6 @@ private:
 	float		m_fMaxSpeed = 30.0f;
 	float		m_fCurSpeed = 0.f;
 	float		m_fMinSpeed = 20.0f;
-	float		m_fTurnLerp = 0.005f;
+	float		m_fTurnLerp = 0.01f;
 	float		m_fRange = 50.0f;
 };

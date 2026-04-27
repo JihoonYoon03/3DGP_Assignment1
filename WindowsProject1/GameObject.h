@@ -138,7 +138,7 @@ public:
 	void EventCollision(CGameObject* objCollided, const eObjType objType) override;
 
 private:
-	float						m_fBulletEffectiveRange = 50.0f;
+	float						m_fBulletEffectiveRange = 100.0f;
 	float						m_fMovingDistance = 0.0f;
 	float						m_fRotationAngle = 0.0f;
 	XMFLOAT3					m_xmf3FirePosition = XMFLOAT3(0.0f, 0.0f, 1.0f);

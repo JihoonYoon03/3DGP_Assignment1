@@ -27,6 +27,14 @@ CGameObject::~CGameObject()
 
 	if (hPen)	::DeleteObject(hPen);
 	if (hBrush) ::DeleteObject(hBrush);
+
+	for (int i = 0; i < DIFFUSE_LEVELS; ++i) {
+		if (hPens[i]) DeleteObject(hPens[i]);
+		if (hBrushes[i]) DeleteObject(hBrushes[i]);
+	}
+
+	hPens.clear();
+	hBrushes.clear();
 }
 
 void CGameObject::SetColor(DWORD dwColor)

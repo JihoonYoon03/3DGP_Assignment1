@@ -285,8 +285,6 @@ void CEnemyAirplane::SmoothTurn(const XMFLOAT3& xmf3LookAt, const XMFLOAT3& xmf3
 	XMFLOAT4X4 xmf4x4View;
 	xmf4x4View = Matrix4x4::LookAtLH(GetPosition(), xmf3LookAt, xmf3Up);
 
-	XMVECTORF32 xmf32vRight = { xmf4x4View._11, xmf4x4View._21, xmf4x4View._31, 0.0f };
-	XMVECTORF32 xmf32vUp = { xmf4x4View._12, xmf4x4View._22, xmf4x4View._32, 0.0f };
 	XMVECTORF32 xmf32vLook = { xmf4x4View._13, xmf4x4View._23, xmf4x4View._33, 0.0f };
 
 	XMStoreFloat3(&m_xmf3Look, XMVector3Normalize(XMVectorLerp(XMVector3Normalize(XMLoadFloat3(&m_xmf3Look)), XMVector3Normalize(xmf32vLook), m_fTurnLerp)));
