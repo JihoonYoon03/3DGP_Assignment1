@@ -163,7 +163,7 @@ void CSceneTitle::Animate(float fElapsedTime)
 
 void CSceneTitle::BuildObjects()
 {
-	CMesh* pAirplaneMesh = new CMesh(L"../Resources/F22_low.obj", 2.0f);
+	CMesh* pAirplaneMesh = new CMesh(L"F22_low.obj", 2.0f);
 	CCubeMesh* cubeMesh = new CCubeMesh(1.5f, 1.5f, 1.5f);
 
 	std::vector<CGameObject*> objects;
@@ -249,7 +249,7 @@ void CSceneStage::BuildObjects()
 {
 	CExplosiveObject::PrepareExplosion();
 
-	CMesh* pAirplaneMesh = new CMesh(L"../Resources/F22_low.obj", 2.0f);
+	CMesh* pAirplaneMesh = new CMesh(L"F22_low.obj", 2.0f);
 	CCubeMesh* pCubeMesh = new CCubeMesh(1.0f, 1.0f, 1.0f);
 
 	std::vector<CGameObject*> objects;

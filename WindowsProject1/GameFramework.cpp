@@ -113,7 +113,7 @@ void CGameFramework::BuildObjects()
 
 	pCamera->GenerateOrthographicProjectionMatrix(1.01f, 50.0f, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
 
-	CMesh* pAirplaneMesh = new CMesh(L"../Resources/F22_low.obj", 2.0f);
+	CMesh* pAirplaneMesh = new CMesh(L"F22_low.obj", 2.0f);
 
 	m_pPlayer = new CAirplanePlayer();
 	m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
